@@ -22,22 +22,28 @@
  * THE SOFTWARE.
  */
 
-package nesimulare;
+package nesimulare.gui;
 
-import java.io.IOException;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+import java.awt.image.BufferedImage;
 
-public class NESimulare {
+/**
+ *
+ * @author Parseus
+ */
+public class RGBRenderer extends Renderer {
 
-    public static void main(String[] args) throws IOException {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            System.err.println(e.getCause().toString());
+    @Override
+    public BufferedImage render(int[][] nespixels) {
+        final int colors[] = new int[240 * 256];
+        
+        for (int y = 0; y < 240; y++) {
+            System.arraycopy(nespixels[y], 0, colors, y * 256, 256);
         }
         
-        nesimulare.core.NES core = new nesimulare.core.NES();
-        core.run();
+        for (int i = 0; i < colors.length; ++i) {
+            colors[i] = Colors.colorsTable[(colors[i] & 0x1c0) >> 6][colors[i] & 0x3f];
+        }
+        
+        return getImageFromArray(colors, 256 * 8, 256, 224);
     }
 }

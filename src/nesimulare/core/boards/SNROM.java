@@ -1,0 +1,165 @@
+/*
+ * The MIT License
+ *
+ * Copyright 2013 Parseus.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+package nesimulare.core.boards;
+
+import nesimulare.core.memory.PPUMemory.Mirroring;
+import nesimulare.gui.Tools;
+
+/**
+ *
+ * @author Parseus
+ */
+public class SNROM extends Board {
+    boolean sramEnable;
+    int register[];
+    int sramBank;
+    int timer, shift, tmp;
+    
+    public SNROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
+    }
+    
+    @Override
+    public void initialize() {
+        super.initialize();
+        
+        timer = 0;
+        
+    }
+    
+    @Override
+    public void hardReset() {
+        super.hardReset();
+        
+        register = new int[4];
+        register[0] = 0x0C;
+        register[1] = register[2] = register[3] = 0;
+        
+        super.switch16kPRGbank(0, 0x8000);
+        super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
+        
+        sramBank = 0;
+        sramEnable = true;
+        timer = 0;
+        shift = tmp = 0;
+    }
+    
+    @Override
+    public int readSRAM(int address) {
+        if (sramEnable) {
+            return sram[sramBank | (address & 0x1FFF)];
+        }
+        
+        return address >> 8;
+    }
+    
+    @Override
+    public void writeSRAM(int address, int data) {
+        if (sramEnable) {
+            sram[sramBank | (address & 0x1FFF)] = data;
+        }
+    }
+    
+    @Override
+    public void writePRG(int address, int data) {
+        if (timer < 2) {
+            return;
+        }
+        
+        timer = 0;
+        
+        if (Tools.getbit(data, 7)) {
+            register[0] |= 0x0C;
+            shift = tmp = 0;
+            return;
+        }
+        
+        if (Tools.getbit(data, 0)) {
+            tmp |= (1 << shift);
+        }
+        
+        if (++shift < 5) {
+            return;
+        }
+        
+        final int reg = (address & 0x7FFF) >> 13;
+        register[reg] = tmp;
+        shift = tmp = 0;
+        
+        write(reg, data);
+    }
+    
+    private void write(int reg, int data) {
+        switch (reg) {
+            case 0:
+                switch (register[0] & 3) {
+                    case 0:
+                        nes.ppuram.setMirroring(Mirroring.ONESCREENA);
+                        break;
+                    case 1:
+                        nes.ppuram.setMirroring(Mirroring.ONESCREENB);
+                        break;
+                    case 2:
+                        nes.ppuram.setMirroring(Mirroring.VERTICAL);
+                        break;
+                    case 3:
+                        nes.ppuram.setMirroring(Mirroring.HORIZONTAL);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case 1:
+            case 2:
+                if (Tools.getbit(register[0], 5)) {
+                    super.switch4kCHRbank(register[1], data);
+                    super.switch4kCHRbank(register[2], 0x1000);
+                } else {
+                    super.switch8kCHRbank(register[1] >> 1);
+                }
+                break;
+            case 3:
+                sramEnable = !Tools.getbit(register[3], 5);
+                
+                if (Tools.getbit(register[0], 4)) {
+                    if (Tools.getbit(register[0], 3)) {
+                        super.switch16kPRGbank(register[3], 0x8000);
+                        super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
+                    } else {
+                        super.switch16kPRGbank(0, 0x8000);
+                        super.switch16kPRGbank(register[3], 0xC000);
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    
+    @Override
+    public void clockCycle() {
+        timer++;
+    }
+}

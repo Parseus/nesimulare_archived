@@ -22,22 +22,23 @@
  * THE SOFTWARE.
  */
 
-package nesimulare;
+package nesimulare.gui;
 
-import java.io.IOException;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+/**
+ *
+ * @author Parseus
+ */
+public interface AudioInterface {
 
-public class NESimulare {
+    public void outputSample(int sample);
 
-    public static void main(String[] args) throws IOException {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            System.err.println(e.getCause().toString());
-        }
-        
-        nesimulare.core.NES core = new nesimulare.core.NES();
-        core.run();
-    }
+    public void flushFrame(boolean waitIfBufferFull);
+
+    public void pause();
+
+    public void resume();
+
+    public void destroy();
+
+    public boolean bufferHasLessThan(int samples);
 }

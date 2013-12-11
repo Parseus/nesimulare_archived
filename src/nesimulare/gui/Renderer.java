@@ -22,22 +22,26 @@
  * THE SOFTWARE.
  */
 
-package nesimulare;
+package nesimulare.gui;
 
-import java.io.IOException;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
+import java.awt.image.WritableRaster;
 
-public class NESimulare {
+/**
+ *
+ * @author Parseus
+ */
+public abstract class Renderer {
+    public abstract BufferedImage render(int[][] nespixels);
 
-    public static void main(String[] args) throws IOException {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            System.err.println(e.getCause().toString());
-        }
+    public static BufferedImage getImageFromArray(final int[] bitmap, final int offset, final int width, final int height) {
+        final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB_PRE);
+        final WritableRaster raster = image.getRaster();
+        final int[] pixels = ((DataBufferInt) raster.getDataBuffer()).getData();
         
-        nesimulare.core.NES core = new nesimulare.core.NES();
-        core.run();
+        System.arraycopy(bitmap, offset, pixels, 0, width * height);
+        
+        return image;
     }
 }

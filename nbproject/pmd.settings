@@ -1,6 +1,15 @@
+ShortMethodName
+DoNotUseThreads
+DefaultPackage
 MethodArgumentCouldBeFinal
 ShortVariable
 MethodNamingConventions
+UseSingleton
+DataflowAnomalyAnalysis
 BooleanGetMethodName
+DoNotCallSystemExit
+UnusedImports
 AbstractNaming
+BeanMembersShouldSerialize
+OnlyOneReturn
 AvoidDuplicateLiterals

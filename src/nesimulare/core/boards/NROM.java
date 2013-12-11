@@ -22,22 +22,15 @@
  * THE SOFTWARE.
  */
 
-package nesimulare;
+package nesimulare.core.boards;
 
-import java.io.IOException;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-
-public class NESimulare {
-
-    public static void main(String[] args) throws IOException {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            System.err.println(e.getCause().toString());
-        }
-        
-        nesimulare.core.NES core = new nesimulare.core.NES();
-        core.run();
+/**
+ * Emulates NROM (mapper 0)
+ *
+ * @author Parseus
+ */
+public class NROM extends Board {
+    public NROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
     }
 }

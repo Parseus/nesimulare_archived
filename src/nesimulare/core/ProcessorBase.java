@@ -22,22 +22,33 @@
  * THE SOFTWARE.
  */
 
-package nesimulare;
+package nesimulare.core;
 
-import java.io.IOException;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+/**
+ *
+ * @author Parseus
+ */
 
-public class NESimulare {
 
-    public static void main(String[] args) throws IOException {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            System.err.println(e.getCause().toString());
+public class ProcessorBase {
+    public Region region = new Region();
+    public Region.System system;
+    
+    public ProcessorBase(Region.System system) {
+        this.system = system;
+    }
+    
+    public void softReset() { }
+    public void hardReset() { }
+    public void cycle() { }
+    
+    public void cycle(int cycles) {
+        while(region.cycles < cycles) {
+            region.cycles += region.singleCycle;
+            
+            cycle();
         }
         
-        nesimulare.core.NES core = new nesimulare.core.NES();
-        core.run();
+        region.cycles -= cycles;
     }
 }

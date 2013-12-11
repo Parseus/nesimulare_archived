@@ -22,22 +22,22 @@
  * THE SOFTWARE.
  */
 
-package nesimulare;
+package nesimulare.gui;
 
-import java.io.IOException;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+/**
+ *
+ * @author Parseus
+ */
+public interface GUIInterface extends Runnable {
+    
+    public void setFrame(int[][] frame);
+    //Frame is now a 256x240 array with NES color numbers from 0-3F
+    //plus the state of the 3 color emphasis bits in bits 7,8,9
 
-public class NESimulare {
+    public void messageBox(String message);
 
-    public static void main(String[] args) throws IOException {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            System.err.println(e.getCause().toString());
-        }
-        
-        nesimulare.core.NES core = new nesimulare.core.NES();
-        core.run();
-    }
+    @Override
+    public void run();
+
+    public void render();   
 }

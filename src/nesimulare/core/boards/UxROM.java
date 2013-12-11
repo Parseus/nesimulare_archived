@@ -22,22 +22,26 @@
  * THE SOFTWARE.
  */
 
-package nesimulare;
+package nesimulare.core.boards;
 
-import java.io.IOException;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-
-public class NESimulare {
-
-    public static void main(String[] args) throws IOException {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            System.err.println(e.getCause().toString());
-        }
-        
-        nesimulare.core.NES core = new nesimulare.core.NES();
-        core.run();
+/**
+ *
+ * @author Parseus
+ */
+public class UxROM extends Board { 
+    public UxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
+    }
+    
+    @Override
+    public void hardReset() {
+        super.hardReset();
+        super.switch16kPRGbank(0, 0x8000);
+        super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
+    }
+    
+    @Override
+    public void writePRG(int address, int data) {
+        super.switch16kPRGbank(data & 0xF, address);
     }
 }

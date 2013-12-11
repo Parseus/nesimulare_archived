@@ -22,22 +22,34 @@
  * THE SOFTWARE.
  */
 
-package nesimulare;
+package nesimulare.core;
 
-import java.io.IOException;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-
-public class NESimulare {
-
-    public static void main(String[] args) throws IOException {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            System.err.println(e.getCause().toString());
-        }
+/**
+ *
+ * @author Parseus
+ */
+public class Region {
+    public static class System {
+        public String name;
+        public int serial;
+        public int cpu;
+        public int ppu;
+        public int apu;
         
-        nesimulare.core.NES core = new nesimulare.core.NES();
-        core.run();
+        public System(String name, int serial, int cpu, int ppu, int apu) {
+            this.name = name;
+            this.serial = serial;
+            this.cpu = cpu;
+            this.ppu = ppu;
+            this.apu = apu;
+        }
     }
+
+    public static final System NTSC = new System("NTSC", 0, 132, 44, 264);
+    public static final System PAL = new System("PAL", 1, 128, 40, 256);
+    public static final System DENDY = new System("Dendy", 2, 129, 43, 258);
+    
+    public int cycles;
+    public int period;
+    public int singleCycle;
 }
