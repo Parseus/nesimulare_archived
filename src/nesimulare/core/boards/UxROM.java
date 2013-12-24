@@ -29,6 +29,8 @@ package nesimulare.core.boards;
  * @author Parseus
  */
 public class UxROM extends Board { 
+    int mask = 0x7;
+    
     public UxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
@@ -37,11 +39,11 @@ public class UxROM extends Board {
     public void hardReset() {
         super.hardReset();
         super.switch16kPRGbank(0, 0x8000);
-        super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
+        super.switch16kPRGbank(mask, 0xC000);
     }
     
     @Override
     public void writePRG(int address, int data) {
-        super.switch16kPRGbank(data & 0xF, address);
+        super.switch16kPRGbank(data & mask, 0x8000);
     }
 }

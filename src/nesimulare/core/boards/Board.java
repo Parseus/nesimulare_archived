@@ -276,7 +276,7 @@ public class Board {
                 testResults.append((char)c);
             }
             
-            System.err.println("Test results: " + testResults.toString());
+            nes.messageBox("Test results: " + testResults.toString());
         }
     }
     

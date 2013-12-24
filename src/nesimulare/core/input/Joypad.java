@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.prefs.Preferences;
+import nesimulare.gui.PrefsSingleton;
 
 import net.java.games.input.Component;
 import net.java.games.input.Controller;
@@ -48,19 +49,25 @@ import nesimulare.gui.Tools;
  */
 public class Joypad extends java.awt.Component implements KeyListener {
 
+    private final java.awt.Component parent;
     private Controller gameController;
     private Component[] buttons;
     private final ScheduledExecutorService thread = Executors.newSingleThreadScheduledExecutor();
     private int latchbyte = 0, controllerbyte = 0, prevbyte = 0, outbyte = 0, gamepadbyte = 0;
     private final HashMap<Integer, Integer> m = new HashMap<>(10);
-    private Preferences prefs;
     private final int controllerNumber;
 
-    public Joypad(int controllerNumber) {
+    public Joypad(final java.awt.Component parent, int controllerNumber) {
         super();
+        
+        if (parent == null) {
+            throw new NullPointerException("Parent not found!");
+        }
+        
+        this.parent = parent;
         this.controllerNumber = controllerNumber;
         setButtons();
-        addKeyListener(this);
+        parent.addKeyListener(this);
     }
 
     @Override
@@ -278,40 +285,44 @@ public class Joypad extends java.awt.Component implements KeyListener {
     
 
     public final void setButtons() {
+        Preferences prefs = PrefsSingleton.get();
+        
         //reset the buttons from prefs
-//        m.clear();
-//        switch (controllerNumber) {
-//            case 0:
-//                m.put(prefs.getInt("keyUp1", KeyEvent.VK_UP), Tools.BIT4);
-//                m.put(prefs.getInt("keyDown1", KeyEvent.VK_DOWN), Tools.BIT5);
-//                m.put(prefs.getInt("keyLeft1", KeyEvent.VK_LEFT), Tools.BIT6);
-//                m.put(prefs.getInt("keyRight1", KeyEvent.VK_RIGHT), Tools.BIT7);
-//                m.put(prefs.getInt("keyA1", KeyEvent.VK_X), Tools.BIT0);
-//                m.put(prefs.getInt("keyB1", KeyEvent.VK_Z), Tools.BIT1);
-//                m.put(prefs.getInt("keySelect1", KeyEvent.VK_SHIFT), Tools.BIT2);
-//                m.put(prefs.getInt("keyStart1", KeyEvent.VK_ENTER), Tools.BIT3);
-//                break;
-//            case 1:
-//            default:
-//                m.put(prefs.getInt("keyUp2", KeyEvent.VK_W), Tools.BIT4);
-//                m.put(prefs.getInt("keyDown2", KeyEvent.VK_S), Tools.BIT5);
-//                m.put(prefs.getInt("keyLeft2", KeyEvent.VK_A), Tools.BIT6);
-//                m.put(prefs.getInt("keyRight2", KeyEvent.VK_D), Tools.BIT7);
-//                m.put(prefs.getInt("keyA2", KeyEvent.VK_G), Tools.BIT0);
-//                m.put(prefs.getInt("keyB2", KeyEvent.VK_F), Tools.BIT1);
-//                m.put(prefs.getInt("keySelect2", KeyEvent.VK_R), Tools.BIT2);
-//                m.put(prefs.getInt("keyStart2", KeyEvent.VK_T), Tools.BIT3);
-//                break;
-//
-//        }
-//        Controller[] controllers = getAvailablePadControllers();
-//        if (controllers.length > controllerNumber) {
-//            this.gameController = controllers[controllerNumber];
-//            System.err.println(controllerNumber + 1 + ". " + gameController.getName());
-//            this.buttons = getButtons(controllers[controllerNumber]);
-//        } else {
-//            this.gameController = null;
-//            this.buttons = null;
-//        }
+        m.clear();
+        switch (controllerNumber) {
+            case 1:
+            default:
+                m.put(prefs.getInt("keyUp1", KeyEvent.VK_UP), Tools.BIT4);
+                m.put(prefs.getInt("keyDown1", KeyEvent.VK_DOWN), Tools.BIT5);
+                m.put(prefs.getInt("keyLeft1", KeyEvent.VK_LEFT), Tools.BIT6);
+                m.put(prefs.getInt("keyRight1", KeyEvent.VK_RIGHT), Tools.BIT7);
+                m.put(prefs.getInt("keyA1", KeyEvent.VK_X), Tools.BIT0);
+                m.put(prefs.getInt("keyB1", KeyEvent.VK_Z), Tools.BIT1);
+                m.put(prefs.getInt("keySelect1", KeyEvent.VK_SHIFT), Tools.BIT2);
+                m.put(prefs.getInt("keyStart1", KeyEvent.VK_ENTER), Tools.BIT3);
+                break;
+            case 2:
+                m.put(prefs.getInt("keyUp2", KeyEvent.VK_W), Tools.BIT4);
+                m.put(prefs.getInt("keyDown2", KeyEvent.VK_S), Tools.BIT5);
+                m.put(prefs.getInt("keyLeft2", KeyEvent.VK_A), Tools.BIT6);
+                m.put(prefs.getInt("keyRight2", KeyEvent.VK_D), Tools.BIT7);
+                m.put(prefs.getInt("keyA2", KeyEvent.VK_G), Tools.BIT0);
+                m.put(prefs.getInt("keyB2", KeyEvent.VK_F), Tools.BIT1);
+                m.put(prefs.getInt("keySelect2", KeyEvent.VK_R), Tools.BIT2);
+                m.put(prefs.getInt("keyStart2", KeyEvent.VK_T), Tools.BIT3);
+                break;
+
+        }
+        Controller[] controllers = getAvailablePadControllers();
+        if (controllers.length > controllerNumber) {
+            this.gameController = controllers[controllerNumber];
+            PrefsSingleton.get().put("controller" + controllerNumber, gameController.getName());
+            System.err.println(controllerNumber + 1 + ". " + gameController.getName());
+            this.buttons = getButtons(controllers[controllerNumber]);
+        } else {
+            PrefsSingleton.get().put("controller" + controllerNumber,"");
+            this.gameController = null;
+            this.buttons = null;
+        }
     }
 }

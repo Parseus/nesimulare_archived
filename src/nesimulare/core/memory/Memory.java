@@ -26,7 +26,7 @@ package nesimulare.core.memory;
 
 public class Memory {
     
-    private int size;
+    private final int size;
     final int mask;
 
     public int length() { 

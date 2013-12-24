@@ -58,8 +58,7 @@ public class Audio implements AudioInterface {
                 sdl.open(af, samplesperframe * 8); //create 4 frame audio buffer
                 sdl.start();
             } catch (LineUnavailableException | IllegalArgumentException a) {
-                System.err.println(a);
-                nes.messageBox("Unable to inintialize sound.");
+                nes.messageBox("Unable to inintialize sound: " + a.getMessage());
                 soundEnable = false;
             }
         }

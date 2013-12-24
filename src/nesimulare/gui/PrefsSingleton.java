@@ -24,22 +24,25 @@
 
 package nesimulare.gui;
 
-import java.awt.image.BufferedImage;
+import java.util.prefs.Preferences;
 
 /**
  *
  * @author Parseus
  */
-public class RGBRenderer extends Renderer {
+public class PrefsSingleton {
 
-    @Override
-    public BufferedImage render(int[][] nespixels) {
-        final int colors[] = new int[240 * 256];
-        
-        for (int y = 0; y < 240; y++) {
-            System.arraycopy(nespixels[y], 0, colors, y * 256, 256);
+    private static Preferences instance = null;
+
+    protected PrefsSingleton() {
+        // Exists only to defeat instantiation.
+    }
+
+    public synchronized static Preferences get() {
+        if (instance == null) {
+            instance = Preferences.userNodeForPackage(nesimulare.core.NES.class);
         }
         
-        return getImageFromArray(colors, 256 * 8, 256, 224);
+        return instance;
     }
 }

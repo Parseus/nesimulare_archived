@@ -50,10 +50,10 @@ public class NES implements Runnable {
     public PPU ppu;
     public CPUMemory cpuram;
     public PPUMemory ppuram;
-    public Controllers controllers;
+    public Controllers controllers = new Controllers();
     public Board board;
     public Region.System region = Region.NTSC;
-    public FrameLimiter frameLimiter;
+    public FrameLimiter frameLimiter = new FrameLimiter(this);
     public GUIImpl gui = new GUIImpl(this);
     private ROMLoader loader;
     
@@ -84,8 +84,6 @@ public class NES implements Runnable {
         cpu = new CPU(region, this);
         apu = new APU(region, cpu, this);
         ppu = new PPU(region, this, cpu, ppuram);
-        controllers = new Controllers();
-        frameLimiter = new FrameLimiter(this);
         
         generatePalette();
         ppu.initialize();
@@ -102,12 +100,13 @@ public class NES implements Runnable {
         run();
     }
     
-    Runnable render = new Runnable() {
-        @Override
-        public void run() {
-            gui.render();
-        }
-    };
+//    Runnable render = new Runnable() {
+//        @Override
+//        public void run() {
+//            gui.render();
+//            Thread.yield();
+//        }
+//    };
     
     public void hardReset() {
         hardResetRequest = true;
@@ -168,13 +167,13 @@ public class NES implements Runnable {
                 }
                 
                 frameDoneTime = System.nanoTime() - frameStartTime;
-                System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
+                //System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
             } else { 
                 frameLimiter.sleepFixed();
                 
-                if (ppu != null && framecount > 1) {
-                    java.awt.EventQueue.invokeLater(render);
-                }
+//                if (ppu != null && framecount > 1) {
+//                    java.awt.EventQueue.invokeLater(render);
+//                }
             
                 if (softResetRequest) {
                     softResetRequest = false;
@@ -204,8 +203,8 @@ public class NES implements Runnable {
     }
     
     public void setControllers(Joypad joypad1, Joypad joypad2) {
-//        controllers.joypad1 = joypad1;
-//        controllers.joypad2 = joypad2;
+        controllers.joypad1 = joypad1;
+        controllers.joypad2 = joypad2;
     }
     
     public Joypad getJoypad1() {

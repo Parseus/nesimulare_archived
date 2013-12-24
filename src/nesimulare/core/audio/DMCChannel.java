@@ -69,6 +69,8 @@ public class DMCChannel extends APUChannel {
         output = 0;
         pcmData = 0;
         buffer = 0;
+        dmaLoop = false;
+        rdyRise = true;
         fetching = false;
         silenced = emptyBuffer = true; 
         irqEnabled = irqFlag = false;
@@ -149,9 +151,10 @@ public class DMCChannel extends APUChannel {
     
     @Override
     public void clockChannel(boolean clockLength) {
-        if (emptyBuffer && lenctr > 0) {
-            apu.cpu.RDY(CPU.DMATypes.DMA);
-        }
+//        if (rdyRise && emptyBuffer && lenctr > 0) {
+//            rdyRise = false;
+//            apu.cpu.RDY(CPU.DMATypes.DMA);
+//        }
     }
     
     @Override
@@ -159,7 +162,7 @@ public class DMCChannel extends APUChannel {
         if (--cycles == 0) {
             cycles = dpcmFrequency[frequency];
             
-            if (silenced) {
+            if (!silenced) {
                 if (Tools.getbit(shiftRegister, 0)) {
                     if (pcmData <= 0x7D) {
                         pcmData += 2;
@@ -175,10 +178,18 @@ public class DMCChannel extends APUChannel {
             } 
             
             if (--outbits == 0) {
+                outbits = 8;
+                
                 if (!emptyBuffer) {
                     shiftRegister = buffer;
                     emptyBuffer = true;
                     silenced = false;
+                    rdyRise = true;
+                    
+                    if (lenctr > 0) {
+                        rdyRise = false;
+                        apu.cpu.RDY(CPU.DMATypes.DMA);
+                    }
                 } else {
                     silenced = true;
                 }
@@ -187,6 +198,7 @@ public class DMCChannel extends APUChannel {
         
         if (emptyBuffer && !fetching && (lenctr > 0)) {
             fetching = true;
+            rdyRise = false;
             apu.cpu.RDY(CPU.DMATypes.DMA);
             lenctr--;
         }
@@ -196,6 +208,7 @@ public class DMCChannel extends APUChannel {
         buffer = apu.cpu.read(dmaAddress);
         emptyBuffer = false;
         fetching = false;
+        rdyRise = true;
         
         if (++dmaAddress == 0x10000) {
             dmaAddress = 0x8000;

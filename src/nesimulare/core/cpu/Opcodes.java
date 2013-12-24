@@ -33,104 +33,125 @@ public interface Opcodes {
     /**
      * Adressing modes.
      */
-    public enum AddressMode {
-        ACC {
-            @Override
-            public String toString() {
-                return "Accumulator";
-            }
-        },
-        
-        ABS {
+    public enum AddressMode {       
+        ABS_A {
             @Override
             public String toString() {
                 return "Absolute";
             }
         },
         
-        ABX {
+        ABS_LC {
+            @Override
+            public String toString() {
+                return "Absolute";
+            }
+        },
+        
+        ABX_R {
             @Override
             public String toString() {
                 return "Absolute, X-indexed";
             }
         },
         
-        ABY {
+        ABX_W {
+            @Override
+            public String toString() {
+                return "Absolute, X-indexed";
+            }
+        },
+        
+        ABY_R {
             @Override
             public String toString() {
                 return "Absolute, Y-indexed";
             }
         },
         
-        IMM {
+        ABY_W {
+            @Override
+            public String toString() {
+                return "Absolute, Y-indexed";
+            }
+        },
+        
+        IMM_A {
             @Override
             public String toString(){
                 return "Immediate";
             }
         },
         
-        IMP {
+        IMP_A {
             @Override
             public String toString(){
                 return "Implied";
             }
         },
         
-        IND {
+        IMP_LC {
+            @Override
+            public String toString(){
+                return "Accumulator";
+            }
+        },
+        
+        IND_A {
             @Override
             public String toString(){
                 return "Indirect";
             }
         },
         
-        INX {
+        INX_A {
             @Override
             public String toString(){
                 return "Indirect, X-indexed";
             }
         },
         
-        INY {
+        INY_R {
             @Override
             public String toString(){
                 return "Indirect, Y-indexed";
             }
         },
         
-        REL {
+        INY_W {
+            @Override
+            public String toString(){
+                return "Indirect, Y-indexed";
+            }
+        },
+        
+        REL_A {
             @Override
             public String toString(){
                 return "Relative";
             }
         },
         
-        ZPG {
+        ZPG_A {
             @Override
             public String toString(){
                 return "Zeropage";
             }
         },
         
-        ZPX {
+        ZPX_A {
             @Override
             public String toString(){
                 return "Zeropage, X-indexed";
             }
         },
         
-        ZPY {
+        ZPY_A {
             @Override
             public String toString(){
                 return "Zeropage, Y-indexed";
             }
         },
-        
-        NUL {
-            @Override
-            public String toString(){
-                return "NULL";
-            }
-        }
     }
     
     /**
@@ -175,70 +196,70 @@ public interface Opcodes {
      * Instruction addressing modes.
      */
     public static final AddressMode[] instructionModes = {
-        AddressMode.IMP, AddressMode.INX, AddressMode.NUL, AddressMode.INX,   // 0x00-0x03
-        AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG,   // 0x04-0x07
-        AddressMode.IMP, AddressMode.IMM, AddressMode.ACC, AddressMode.IMM,   // 0x08-0x0b
-        AddressMode.ABS, AddressMode.ABS, AddressMode.ABS, AddressMode.ABS,   // 0x0c-0x0f
-        AddressMode.REL, AddressMode.INY, AddressMode.NUL, AddressMode.INY,   // 0x10-0x13
-        AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX,   // 0x14-0x17
-        AddressMode.IMP, AddressMode.ABY, AddressMode.IMP, AddressMode.ABY,   // 0x18-0x1b
-        AddressMode.ABX, AddressMode.ABX, AddressMode.ABX, AddressMode.ABX,   // 0x1c-0x1f
-        AddressMode.ABS, AddressMode.INX, AddressMode.NUL, AddressMode.INX,   // 0x20-0x23
-        AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG,   // 0x24-0x27
-        AddressMode.IMP, AddressMode.IMM, AddressMode.ACC, AddressMode.IMM,   // 0x28-0x2b
-        AddressMode.ABS, AddressMode.ABS, AddressMode.ABS, AddressMode.ABS,   // 0x2c-0x2f
-        AddressMode.REL, AddressMode.INY, AddressMode.NUL, AddressMode.INY,   // 0x30-0x33
-        AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX,   // 0x34-0x37
-        AddressMode.IMP, AddressMode.ABY, AddressMode.IMP, AddressMode.ABY,   // 0x38-0x3b
-        AddressMode.ABX, AddressMode.ABX, AddressMode.ABX, AddressMode.ABX,   // 0x3c-0x3f
-        AddressMode.IMP, AddressMode.INX, AddressMode.NUL, AddressMode.INX,   // 0x40-0x43
-        AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG,   // 0x44-0x47
-        AddressMode.IMP, AddressMode.IMM, AddressMode.ACC, AddressMode.IMM,   // 0x48-0x4b
-        AddressMode.ABS, AddressMode.ABS, AddressMode.ABS, AddressMode.ABS,   // 0x4c-0x4f
-        AddressMode.REL, AddressMode.INY, AddressMode.NUL, AddressMode.INY,   // 0x50-0x53
-        AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX,   // 0x54-0x57
-        AddressMode.IMP, AddressMode.ABY, AddressMode.IMP, AddressMode.ABY,   // 0x58-0x5b
-        AddressMode.ABX, AddressMode.ABX, AddressMode.ABX, AddressMode.ABX,   // 0x5c-0x5f
-        AddressMode.IMP, AddressMode.INX, AddressMode.NUL, AddressMode.INX,   // 0x60-0x63
-        AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG,   // 0x64-0x67
-        AddressMode.IMP, AddressMode.IMM, AddressMode.ACC, AddressMode.IMM,   // 0x68-0x6b
-        AddressMode.IND, AddressMode.ABS, AddressMode.ABS, AddressMode.ABS,   // 0x6c-0x6f
-        AddressMode.REL, AddressMode.INY, AddressMode.NUL, AddressMode.INY,   // 0x70-0x73
-        AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX,   // 0x74-0x77
-        AddressMode.IMP, AddressMode.ABY, AddressMode.IMP, AddressMode.ABY,   // 0x78-0x7b
-        AddressMode.ABX, AddressMode.ABX, AddressMode.ABX, AddressMode.ABX,   // 0x7c-0x7f
-        AddressMode.IMM, AddressMode.INX, AddressMode.IMM, AddressMode.INX,   // 0x80-0x83
-        AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG,   // 0x84-0x87
-        AddressMode.IMP, AddressMode.IMM, AddressMode.IMP, AddressMode.IMM,   // 0x88-0x8b
-        AddressMode.ABS, AddressMode.ABS, AddressMode.ABS, AddressMode.ABS,   // 0x8c-0x8f
-        AddressMode.REL, AddressMode.INY, AddressMode.NUL, AddressMode.INY,   // 0x90-0x93
-        AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPY, AddressMode.ZPY,   // 0x94-0x97
-        AddressMode.IMP, AddressMode.ABY, AddressMode.IMP, AddressMode.ABY,   // 0x98-0x9b
-        AddressMode.ABX, AddressMode.ABX, AddressMode.ABY, AddressMode.ABY,   // 0x9c-0x9f
-        AddressMode.IMM, AddressMode.INX, AddressMode.IMM, AddressMode.INX,   // 0xa0-0xa3
-        AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG,   // 0xa4-0xa7
-        AddressMode.IMP, AddressMode.IMM, AddressMode.IMP, AddressMode.IMM,   // 0xa8-0xab
-        AddressMode.ABS, AddressMode.ABS, AddressMode.ABS, AddressMode.ABS,   // 0xac-0xaf
-        AddressMode.REL, AddressMode.INY, AddressMode.NUL, AddressMode.INY,   // 0xb0-0xb3
-        AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPY, AddressMode.ZPY,   // 0xb4-0xb7
-        AddressMode.IMP, AddressMode.ABY, AddressMode.IMP, AddressMode.ABY,   // 0xb8-0xbb
-        AddressMode.ABX, AddressMode.ABX, AddressMode.ABY, AddressMode.ABY,   // 0xbc-0xbf
-        AddressMode.IMM, AddressMode.INX, AddressMode.IMM, AddressMode.INX,   // 0xc0-0xc3
-        AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG,   // 0xc4-0xc7
-        AddressMode.IMP, AddressMode.IMM, AddressMode.IMP, AddressMode.IMM,   // 0xc8-0xcb
-        AddressMode.ABS, AddressMode.ABS, AddressMode.ABS, AddressMode.ABS,   // 0xcc-0xcf
-        AddressMode.REL, AddressMode.INY, AddressMode.NUL, AddressMode.INY,   // 0xd0-0xd3
-        AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX,   // 0xd4-0xd7
-        AddressMode.IMP, AddressMode.ABY, AddressMode.IMP, AddressMode.ABY,   // 0xd8-0xdb
-        AddressMode.ABX, AddressMode.ABX, AddressMode.ABX, AddressMode.ABX,   // 0xdc-0xdf
-        AddressMode.IMM, AddressMode.INX, AddressMode.IMM, AddressMode.INX,   // 0xe0-0xe3
-        AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG, AddressMode.ZPG,   // 0xe4-0xe7
-        AddressMode.IMP, AddressMode.IMM, AddressMode.IMP, AddressMode.IMM,   // 0xe8-0xeb
-        AddressMode.ABS, AddressMode.ABS, AddressMode.ABS, AddressMode.ABS,   // 0xec-0xef
-        AddressMode.REL, AddressMode.INY, AddressMode.NUL, AddressMode.INY,   // 0xf0-0xf3
-        AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX, AddressMode.ZPX,   // 0xf4-0xf7
-        AddressMode.IMP, AddressMode.ABY, AddressMode.IMP, AddressMode.ABY,   // 0xf8-0xfb
-        AddressMode.ABX, AddressMode.ABX, AddressMode.ABX, AddressMode.ABX    // 0xfc-0xff
+        AddressMode.IMM_A,  AddressMode.INX_A, AddressMode.IMP_A,  AddressMode.INX_A,   // 0x00-0x03
+        AddressMode.ZPG_A,  AddressMode.ZPG_A, AddressMode.ZPG_A,  AddressMode.ZPG_A,   // 0x04-0x07
+        AddressMode.IMP_A,  AddressMode.IMM_A, AddressMode.IMP_LC, AddressMode.IMM_A,   // 0x08-0x0b
+        AddressMode.ABS_A,  AddressMode.ABS_A, AddressMode.ABS_A,  AddressMode.ABS_A,   // 0x0c-0x0f
+        AddressMode.REL_A,  AddressMode.INY_R, AddressMode.IMP_A,  AddressMode.INY_W,   // 0x10-0x13
+        AddressMode.ZPX_A,  AddressMode.ZPX_A, AddressMode.ZPX_A,  AddressMode.ZPX_A,   // 0x14-0x17
+        AddressMode.IMP_LC, AddressMode.ABY_R, AddressMode.IMP_LC, AddressMode.ABY_W,   // 0x18-0x1b
+        AddressMode.ABX_R,  AddressMode.ABX_R, AddressMode.ABX_W,  AddressMode.ABX_W,   // 0x1c-0x1f
+        AddressMode.ABS_A,  AddressMode.INX_A, AddressMode.IMP_A,  AddressMode.INX_A,   // 0x20-0x23
+        AddressMode.ZPG_A,  AddressMode.ZPG_A, AddressMode.ZPG_A,  AddressMode.ZPG_A,   // 0x24-0x27
+        AddressMode.IMP_A,  AddressMode.IMM_A, AddressMode.IMP_LC, AddressMode.IMM_A,   // 0x28-0x2b
+        AddressMode.ABS_A,  AddressMode.ABS_A, AddressMode.ABS_A,  AddressMode.ABS_A,   // 0x2c-0x2f
+        AddressMode.REL_A,  AddressMode.INY_R, AddressMode.IMP_A,  AddressMode.INY_W,   // 0x30-0x33
+        AddressMode.ZPX_A,  AddressMode.ZPX_A, AddressMode.ZPX_A,  AddressMode.ZPX_A,   // 0x34-0x37
+        AddressMode.IMP_LC, AddressMode.ABY_R, AddressMode.IMP_LC, AddressMode.ABY_W,   // 0x38-0x3b
+        AddressMode.ABX_R,  AddressMode.ABX_R, AddressMode.ABX_W,  AddressMode.ABX_W,   // 0x3c-0x3f
+        AddressMode.IMP_A,  AddressMode.INX_A, AddressMode.IMP_A,  AddressMode.INX_A,   // 0x40-0x43
+        AddressMode.ZPG_A,  AddressMode.ZPG_A, AddressMode.ZPG_A,  AddressMode.ZPG_A,   // 0x44-0x47
+        AddressMode.IMP_A,  AddressMode.IMM_A, AddressMode.IMP_LC, AddressMode.IMM_A,   // 0x48-0x4b
+        AddressMode.ABS_LC, AddressMode.ABS_A, AddressMode.ABS_A,  AddressMode.ABS_A,   // 0x4c-0x4f
+        AddressMode.REL_A,  AddressMode.INY_R, AddressMode.IMP_A,  AddressMode.INY_W,   // 0x50-0x53
+        AddressMode.ZPX_A,  AddressMode.ZPX_A, AddressMode.ZPX_A,  AddressMode.ZPX_A,   // 0x54-0x57
+        AddressMode.IMP_LC, AddressMode.ABY_R, AddressMode.IMP_LC, AddressMode.ABY_W,   // 0x58-0x5b
+        AddressMode.ABX_R,  AddressMode.ABX_R, AddressMode.ABX_W,  AddressMode.ABX_W,   // 0x5c-0x5f
+        AddressMode.IMP_A,  AddressMode.INX_A, AddressMode.IMP_A,  AddressMode.INX_A,   // 0x60-0x63
+        AddressMode.ZPG_A,  AddressMode.ZPG_A, AddressMode.ZPG_A,  AddressMode.ZPG_A,   // 0x64-0x67
+        AddressMode.IMP_A,  AddressMode.IMM_A, AddressMode.IMP_LC, AddressMode.IMM_A,   // 0x68-0x6b
+        AddressMode.IND_A,  AddressMode.ABS_A, AddressMode.ABS_A,  AddressMode.ABS_A,   // 0x6c-0x6f
+        AddressMode.REL_A,  AddressMode.INY_R, AddressMode.IMP_A,  AddressMode.INY_W,   // 0x70-0x73
+        AddressMode.ZPX_A,  AddressMode.ZPX_A, AddressMode.ZPX_A,  AddressMode.ZPX_A,   // 0x74-0x77
+        AddressMode.IMP_LC, AddressMode.ABY_R, AddressMode.IMP_LC, AddressMode.ABY_W,   // 0x78-0x7b
+        AddressMode.ABX_R,  AddressMode.ABX_R, AddressMode.ABX_W,  AddressMode.ABX_W,   // 0x7c-0x7f
+        AddressMode.IMM_A,  AddressMode.INX_A, AddressMode.IMM_A,  AddressMode.INX_A,   // 0x80-0x83
+        AddressMode.ZPG_A,  AddressMode.ZPG_A, AddressMode.ZPG_A,  AddressMode.ZPG_A,   // 0x84-0x87
+        AddressMode.IMP_LC, AddressMode.IMM_A, AddressMode.IMP_LC, AddressMode.IMM_A,   // 0x88-0x8b
+        AddressMode.ABS_A,  AddressMode.ABS_A, AddressMode.ABS_A,  AddressMode.ABS_A,   // 0x8c-0x8f
+        AddressMode.REL_A,  AddressMode.INY_W, AddressMode.IMP_A,  AddressMode.INY_W,   // 0x90-0x93
+        AddressMode.ZPX_A,  AddressMode.ZPX_A, AddressMode.ZPY_A,  AddressMode.ZPY_A,   // 0x94-0x97
+        AddressMode.IMP_LC, AddressMode.ABY_W, AddressMode.IMP_LC, AddressMode.ABY_W,   // 0x98-0x9b
+        AddressMode.ABS_A,  AddressMode.ABX_W, AddressMode.ABS_A,  AddressMode.ABY_W,   // 0x9c-0x9f
+        AddressMode.IMM_A,  AddressMode.INX_A, AddressMode.IMM_A,  AddressMode.INX_A,   // 0xa0-0xa3
+        AddressMode.ZPG_A,  AddressMode.ZPG_A, AddressMode.ZPG_A,  AddressMode.ZPG_A,   // 0xa4-0xa7
+        AddressMode.IMP_LC, AddressMode.IMM_A, AddressMode.IMP_LC, AddressMode.IMM_A,   // 0xa8-0xab
+        AddressMode.ABS_A,  AddressMode.ABS_A, AddressMode.ABS_A,  AddressMode.ABS_A,   // 0xac-0xaf
+        AddressMode.REL_A,  AddressMode.INY_R, AddressMode.IMP_A,  AddressMode.INY_R,   // 0xb0-0xb3
+        AddressMode.ZPX_A,  AddressMode.ZPX_A, AddressMode.ZPY_A,  AddressMode.ZPY_A,   // 0xb4-0xb7
+        AddressMode.IMP_LC, AddressMode.ABY_R, AddressMode.IMP_LC, AddressMode.ABY_R,   // 0xb8-0xbb
+        AddressMode.ABX_R,  AddressMode.ABX_R, AddressMode.ABY_R,  AddressMode.ABY_R,   // 0xbc-0xbf
+        AddressMode.IMM_A,  AddressMode.INX_A, AddressMode.IMM_A,  AddressMode.INX_A,   // 0xc0-0xc3
+        AddressMode.ZPG_A,  AddressMode.ZPG_A, AddressMode.ZPG_A,  AddressMode.ZPG_A,   // 0xc4-0xc7
+        AddressMode.IMP_LC, AddressMode.IMM_A, AddressMode.IMP_LC, AddressMode.IMM_A,   // 0xc8-0xcb
+        AddressMode.ABS_A,  AddressMode.ABS_A, AddressMode.ABS_A,  AddressMode.ABS_A,   // 0xcc-0xcf
+        AddressMode.REL_A,  AddressMode.INY_R, AddressMode.IMP_A,  AddressMode.INY_W,   // 0xd0-0xd3
+        AddressMode.ZPX_A,  AddressMode.ZPX_A, AddressMode.ZPX_A,  AddressMode.ZPX_A,   // 0xd4-0xd7
+        AddressMode.IMP_LC, AddressMode.ABY_R, AddressMode.IMP_LC, AddressMode.ABY_W,   // 0xd8-0xdb
+        AddressMode.ABX_R,  AddressMode.ABX_R, AddressMode.ABX_W,  AddressMode.ABX_W,   // 0xdc-0xdf
+        AddressMode.IMM_A,  AddressMode.INX_A, AddressMode.IMM_A,  AddressMode.INX_A,   // 0xe0-0xe3
+        AddressMode.ZPG_A,  AddressMode.ZPG_A, AddressMode.ZPG_A,  AddressMode.ZPG_A,   // 0xe4-0xe7
+        AddressMode.IMP_LC, AddressMode.IMM_A, AddressMode.IMP_LC, AddressMode.IMM_A,   // 0xe8-0xeb
+        AddressMode.ABS_A,  AddressMode.ABS_A, AddressMode.ABS_A,  AddressMode.ABS_A,   // 0xec-0xef
+        AddressMode.REL_A,  AddressMode.INY_R, AddressMode.IMP_A,  AddressMode.INY_W,   // 0xf0-0xf3
+        AddressMode.ZPX_A,  AddressMode.ZPX_A, AddressMode.ZPX_A,  AddressMode.ZPX_A,   // 0xf4-0xf7
+        AddressMode.IMP_LC, AddressMode.ABY_R, AddressMode.IMP_LC, AddressMode.ABY_W,   // 0xf8-0xfb
+        AddressMode.ABX_R,  AddressMode.ABX_R, AddressMode.ABX_W,  AddressMode.ABX_W    // 0xfc-0xff
     };
     
     /**

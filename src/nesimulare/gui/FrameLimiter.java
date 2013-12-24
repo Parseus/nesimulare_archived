@@ -40,14 +40,14 @@ public class FrameLimiter {
     public FrameLimiter(NES nes) {
         this.nes = nes;
         FRAME_NS = nes.region == Region.NTSC ? 16638935 : 19997200;
-        forceHighResolutionTimer();
+        //forceHighResolutionTimer();
     }
 
     public void sleep() {
         //Frame Limiter
         final long timeleft = System.nanoTime() - nes.frameStartTime;
         if (timeleft < FRAME_NS) {
-            final int sleepytime = (int) (FRAME_NS - timeleft + sleepingtest);
+            final long sleepytime = (FRAME_NS - timeleft + sleepingtest);
             if (sleepytime < 0) {
                 return;
                 //don't sleep at all.

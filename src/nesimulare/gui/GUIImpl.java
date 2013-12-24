@@ -81,8 +81,8 @@ public class GUIImpl extends JFrame implements GUIInterface {
         super();
 
         this.nes = nes;
-        joypad1 = new Joypad(1);
-        joypad2= new Joypad(2);
+        joypad1 = new Joypad(this, 1);
+        joypad2 = new Joypad(this, 2);
         nes.setControllers(joypad1, joypad2);
         joypad1.startEventQueue();
         joypad2.startEventQueue();
@@ -96,11 +96,11 @@ public class GUIImpl extends JFrame implements GUIInterface {
         //screenScaleFactor = PrefsSingleton.get().getInt("screenScaling", 2);
         //bilinearFiltering = PrefsSingleton.get().getBoolean("bilinearFiltering", false);
         //if (PrefsSingleton.get().getBoolean("TVEmulation", false)) {
-            renderer = new NTSCRenderer();
-            NES_WIDTH = 302;
+        //    renderer = new NTSCRenderer();
+        //    NES_WIDTH = 302;
         //} else {
-          //renderer = new RGBRenderer();
-         // NES_WIDTH = 256;
+          renderer = new RGBRenderer();
+          NES_WIDTH = 256;
         //}
         // Create canvas for painting
         canvas = new Canvas();

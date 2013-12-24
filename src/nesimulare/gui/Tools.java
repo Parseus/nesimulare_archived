@@ -115,6 +115,7 @@ public class Tools {
      */
     public static String wordToHex(int val) {
         final StringBuilder sb = new StringBuilder(4);
+        
         sb.append(HEX_CONSTANTS[(val >> 8) & 0xff]);
         sb.append(HEX_CONSTANTS[val & 0xff]);
         
@@ -172,15 +173,16 @@ public class Tools {
                 try {
                     try (FileOutputStream b = new FileOutputStream(path)) {
                         byte[] buf = new byte[a.length];
+                        
                         for (int i = 0; i < a.length; ++i) {
                             buf[i] = (byte) (a[i] & 0xff);
                         }
+                        
                         b.write(buf);
                         b.flush();
                     }
                 } catch (IOException e) {
-                    System.err.print("Could not save. ");
-                    System.err.println(e);
+                    System.err.println("Error while saving: " + e.getMessage());
                 }
             }
         }

@@ -36,8 +36,6 @@ public class Controllers {
     public boolean zapperConnected = false;
     
     public Controllers() {
-        joypad1 = new Joypad(1);
-        joypad2 = new Joypad(2);
         zapper = new Zapper();
     }
     

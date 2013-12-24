@@ -61,6 +61,7 @@ public class PaletteGenerator {
     private static int generateRGBColor(int pixel) {
         final int color = (pixel & 0xF);
         final int level = color < 0xE ? (pixel >> 4) & 0x3 : 0x1;
+        final double pi = Math.PI / 6.0;
         
         final float low_high[] = { levels[level + ((color == 0x0) ? 0x4 : 0x0)], levels[level + ((color <= 0xC) ? 4 : 0)] };
         
@@ -79,16 +80,16 @@ public class PaletteGenerator {
             v = (v - 0.5f) * contrast + 0.5f;
             v *= brightness / 12.0f;
             y += v;
-            i += (float)(v * Math.cos((Math.PI / 6.0) * (p + hueTweak)));
-            q += (float)(v * Math.sin((Math.PI / 6.0) * (p + hueTweak)));
+            i += (float)(v * Math.cos(pi * (p + hueTweak)));
+            q += (float)(v * Math.sin(pi * (p + hueTweak)));
         }
         
         i *= saturation;
         q *= saturation;
         
-        return 0x10000 * clamp(255 * gammafix(y + 0.946882F * i + 0.623557F * q, gamma)) +
-               0x00100 * clamp(255 * gammafix(y - 0.274788F * i - 0.635691F * q, gamma)) +
-               0x00001 * clamp(255 * gammafix(y - 1.108545F * i + 1.709007F * q, gamma));
+        return 0x10000 * clamp(255.95F * gammafix(y + 0.946882F * i + 0.623557F * q, gamma)) +
+               0x00100 * clamp(255.95F * gammafix(y - 0.274788F * i - 0.635691F * q, gamma)) +
+               0x00001 * clamp(255.95F * gammafix(y - 1.108545F * i + 1.709007F * q, gamma));
     }
     
     public static int[] generattePalette() {

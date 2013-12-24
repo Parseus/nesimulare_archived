@@ -22,24 +22,18 @@
  * THE SOFTWARE.
  */
 
-package nesimulare.gui;
-
-import java.awt.image.BufferedImage;
+package nesimulare.core.audio;
 
 /**
  *
  * @author Parseus
  */
-public class RGBRenderer extends Renderer {
-
-    @Override
-    public BufferedImage render(int[][] nespixels) {
-        final int colors[] = new int[240 * 256];
-        
-        for (int y = 0; y < 240; y++) {
-            System.arraycopy(nespixels[y], 0, colors, y * 256, 256);
-        }
-        
-        return getImageFromArray(colors, 256 * 8, 256, 224);
-    }
+public interface ExpansionSoundChip {
+    short mix();
+    void hardReset();
+    void softReset();
+    void quarterFrame();
+    void halfFrame();
+    void clockChannel(boolean clockingLength);
+    void cycle(int cycles);
 }

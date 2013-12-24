@@ -24,6 +24,7 @@
 
 package nesimulare.core.audio;
 
+import java.util.ArrayList;
 import nesimulare.core.NES;
 import nesimulare.core.ProcessorBase;
 import nesimulare.core.cpu.CPU;
@@ -77,12 +78,13 @@ public class APU extends ProcessorBase {
     private int apuCycles = 0;
     private int sampleRate = 44100;
     private int currentSequencer;
+    private boolean expansionSound = false;
     private boolean clockLength = false;
     private boolean sequencerMode = false;
     private boolean oddCycle = false;
     private boolean frameIRQEnabled;
     private boolean frameIRQFlag;
-    //private ArrayList<ExpansionSoundChip> expnSndChip = new ArrayList<ExpansionSoundChip>();
+    private final ArrayList<ExpansionSoundChip> expnSndChip = new ArrayList<>();
     
     public APU(nesimulare.core.Region.System system, final CPU cpu, final NES nes) {
         super(system);
@@ -150,6 +152,12 @@ public class APU extends ProcessorBase {
         triangle.hardReset();
         noise.hardReset();
         dmc.hardReset();
+        
+        if (expansionSound) {
+            for (ExpansionSoundChip esc: expnSndChip) {
+                esc.hardReset();
+            }
+        }
     }
     
     @Override
@@ -160,6 +168,12 @@ public class APU extends ProcessorBase {
         noise.softReset();
         dmc.softReset();
         
+        if (expansionSound) {
+            for (ExpansionSoundChip esc: expnSndChip) {
+                esc.softReset();
+            }
+        }
+        
         apuCycles = SequenceMode0[system.serial][0] - 10;
         
         oddCycle = false;
@@ -167,6 +181,11 @@ public class APU extends ProcessorBase {
         frameIRQFlag = false;
         sequencerMode = false;
         currentSequencer = 0;
+    }
+    
+    public void addExpansionSoundChip(ExpansionSoundChip chip) {
+        expnSndChip.add(chip);
+        expansionSound = true;
     }
     
     public int read(final int address) {
@@ -187,12 +206,12 @@ public class APU extends ProcessorBase {
                 return result;
             case 0x4016:
                 nes.controllers.read(address);
-                result = (cpu.lastRead & 0xC0);
+                result = (CPU.lastRead & 0xC0);
                 
                 return result;
             case 0x4017:
                 nes.controllers.read(address);
-                result = (cpu.lastRead & 0xC0);
+                result = (CPU.lastRead & 0xC0);
                 
                 return result;
             default:
@@ -218,15 +237,15 @@ public class APU extends ProcessorBase {
                 dmc.write(address & 3, data);
                 break;
             case 0x4015:
-                pulse1.write(4, data);
-                pulse2.write(4, data);
-                triangle.write(4, data);
-                noise.write(4, data);
-                dmc.write(4, data);
+                pulse1.write(4, data & 0x1);
+                pulse2.write(4, data & 0x2);
+                triangle.write(4, data & 0x4);
+                noise.write(4, data & 0x8);
+                dmc.write(4, data & 0x10);
                 break;
             case 0x4016:
-                nes.controllers.joypad1.output(Tools.getbit(data, 0));
-                nes.controllers.joypad2.output(Tools.getbit(data, 0));
+                nes.getJoypad1().output(Tools.getbit(data, 0));
+                nes.getJoypad2().output(Tools.getbit(data, 0));
                 break;
             case 0x4017:
                 sequencerMode = Tools.getbit(data, 7);
@@ -271,6 +290,12 @@ public class APU extends ProcessorBase {
         pulse2.quarterFrame();
         triangle.quarterFrame();
         noise.quarterFrame();
+        
+        if (expansionSound) {
+            for (ExpansionSoundChip esc: expnSndChip) {
+                esc.quarterFrame();
+            }
+        }
     }
     
     private void halfFrame() {
@@ -280,6 +305,12 @@ public class APU extends ProcessorBase {
         pulse2.halfFrame();
         triangle.halfFrame();
         noise.halfFrame();
+        
+        if (expansionSound) {
+            for (ExpansionSoundChip esc: expnSndChip) {
+                esc.halfFrame();
+            }
+        }
     }
     
     @Override
@@ -318,7 +349,7 @@ public class APU extends ProcessorBase {
                 
                 currentSequencer++;
                 
-                cycles += SequenceMode0[system.serial][currentSequencer];
+                apuCycles += SequenceMode0[system.serial][currentSequencer];
                 
                 if (currentSequencer == 6) {
                     currentSequencer = 0;
@@ -343,7 +374,7 @@ public class APU extends ProcessorBase {
                 
                 currentSequencer++;
                 
-                cycles = SequenceMode1[system.serial][currentSequencer];
+                apuCycles = SequenceMode1[system.serial][currentSequencer];
                 
                 if (currentSequencer == 4) {
                     currentSequencer = 0;
@@ -362,6 +393,12 @@ public class APU extends ProcessorBase {
         triangle.cycle(region.singleCycle);
         noise.cycle(region.singleCycle);
         dmc.cycle(region.singleCycle);
+        
+        if (expansionSound) {
+            for (ExpansionSoundChip esc: expnSndChip) {
+                esc.cycle(region.singleCycle);
+            }
+        }
     }
     
     private void clockChannels() {
@@ -370,9 +407,100 @@ public class APU extends ProcessorBase {
         triangle.clockChannel(clockLength);
         noise.clockChannel(clockLength);
         dmc.clockChannel(clockLength);
+        
+        if (expansionSound) {
+            for (ExpansionSoundChip esc: expnSndChip) {
+                esc.clockChannel(clockLength);
+            }
+        }
+        
+        clockLength = false;
     }
     
     public void dmcFetch() {
         dmc.fetch();
     }
-}
+    
+    private void addSample() {
+        short output = mixSamples();
+        
+        if (expansionSound) {
+            short expn = 0;
+            
+            for (ExpansionSoundChip esc: expnSndChip) {
+                expn += esc.mix();
+            }
+            
+            output = Mixer.mixSamples(pulse1.getOutput(), pulse2.getOutput(), triangle.getOutput(), 
+                    noise.getOutput(), dmc.getOutput(), expn);
+            
+            if (output > 80) {
+                output = 80;
+            }
+            
+            if (output < -80) {
+                output = -80;
+            }
+        }
+    }
+    
+    public short mixSamples() {
+        return Mixer.mixSamples(pulse1.getOutput(), pulse2.getOutput(), triangle.getOutput(), noise.getOutput(), dmc.getOutput());
+    }
+    
+    public static class Mixer {
+        private static short mix_table[][][][][];
+        private static int accum;
+        private static int prev_x;
+        private static int prev_y;
+        
+        public Mixer() {
+            mix_table = new short[16][][][][];
+            
+            for (int pulse1 = 0; pulse1 < 16; pulse1++) {
+                mix_table[pulse1] = new short[16][][][];
+                
+                for (int pulse2 = 0; pulse2 < 16; pulse2++) {
+                    mix_table[pulse1][pulse2] = new short[16][][];
+                    
+                    for(int triangle = 0; triangle < 16; triangle++) {
+                        mix_table[pulse1][pulse2][triangle] = new short[16][];
+                        
+                        for (int noise = 0; noise < 16; noise++) {
+                            mix_table[pulse1][pulse2][triangle][noise] = new short[128];
+                            
+                            for (int dmc = 0; dmc < 128; dmc++) {
+                                final double pulse = (95.88 / (8128.0 / (pulse1 + pulse2) + 100));
+                                final double tnd = (159.79 / (1.0 / ((triangle / 8227.0) + (noise / 12241.0) + (dmc / 22638.0)) + 100));
+                                
+                                mix_table[pulse1][pulse2][triangle][noise][dmc] = (short)((pulse + tnd) * 128);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        private static short Filter(int value)
+            {
+                final int POLE = (int)(32767 * (1.0 - 0.9999));
+
+                accum -= prev_x;
+                prev_x = value << 15;
+                accum += prev_x - prev_y * POLE;
+                prev_y = accum >> 15;
+
+                return (short)prev_y;
+            }
+
+            public static short mixSamples(int pulse1, int pulse2, int triangle, int noise, int dmc)
+            {
+                return mix_table[pulse1][pulse2][triangle][noise][dmc];
+            }
+            public static short mixSamples(int pulse1, int pulse2, int triangle, int noise, int dmc, short exp)
+            {
+                return Filter(
+                    (mix_table[pulse1][pulse2][triangle][noise][dmc] >> 1) + (exp >> 1));
+            }
+    }
+} 
