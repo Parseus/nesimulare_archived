@@ -44,10 +44,7 @@ public class Board {
     protected int prgmask;
     protected int chrmask;
     protected String[] filename;
-    private static final boolean LOGGING = false;
-    public static enum MirrorType {
-        H_MIRROR,V_MIRROR,SS_MIRRORA, SS_MIRRORB, FOUR_SCREEN_MIRROR
-    };
+    private static final boolean LOGGING = true;
     
     /**
      *
@@ -76,7 +73,7 @@ public class Board {
     public void hardReset() {
         sram = new int[0x2000];
         switch8kCHRbank(0);
-        switch32kPRGbank(0, 0);
+        switch32kPRGbank(0);
     }
     
     /**
@@ -130,9 +127,8 @@ public class Board {
     /**
      *
      * @param index
-     * @param addr
      */
-    protected void switch32kPRGbank(int index, int addr) {
+    protected void switch32kPRGbank(int index) {
         int bank = index << 15;
         
         for (int i = 0; i < 4; i++) {
@@ -240,7 +236,7 @@ public class Board {
     }
     
     public int readEXP(final int address) {
-        return 0x00;
+        return address << 8;
     }
     
     
@@ -276,7 +272,8 @@ public class Board {
                 testResults.append((char)c);
             }
             
-            nes.messageBox("Test results: " + testResults.toString());
+            System.err.println(testResults.toString());
+            //nes.messageBox("Test results: " + testResults.toString());
         }
     }
     
@@ -289,7 +286,9 @@ public class Board {
     }
     
     public void writeCHR(final int address, final int data) {
-        chr[decodeCHRAddress(address) & chrmask] = data;
+        if (address >= 0x2000 && haschrram) {
+            chr[decodeCHRAddress(address) & chrmask] = data;
+        }
     }
     
     public void clockCycle() {

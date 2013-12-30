@@ -35,6 +35,6 @@ public class CNROM extends Board {
     
     @Override
     public void writePRG(int address, int data) {
-        super.switch8kCHRbank(getBusData(address, data));
+        super.switch8kCHRbank(data);
     }
 }

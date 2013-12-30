@@ -41,6 +41,7 @@ public class APU extends ProcessorBase {
     
     CPU cpu;
     NES nes;
+    Mixer mixer;
     
     PulseChannel pulse1, pulse2;
     TriangleChannel triangle;
@@ -74,9 +75,8 @@ public class APU extends ProcessorBase {
         new int[] { 1, 8314, 8314, 8312, 16626 } , // PAL
         new int[] { 1, 7458, 7456, 7458, 14910 } , // DENDY
     };
-    
+
     private int apuCycles = 0;
-    private int sampleRate = 44100;
     private int currentSequencer;
     private boolean expansionSound = false;
     private boolean clockLength = false;
@@ -85,6 +85,14 @@ public class APU extends ProcessorBase {
     private boolean frameIRQEnabled;
     private boolean frameIRQFlag;
     private final ArrayList<ExpansionSoundChip> expnSndChip = new ArrayList<>();
+    
+    public int sampleRate = 44100;
+    private short[] soundBuffer = new short[sampleRate];
+    private int rPosition;
+    private int wPosition;
+    private int sampleCycles;
+    private int sampleSingle = 77;
+    private int samplePeriod = 3125;
     
     public APU(nesimulare.core.Region.System system, final CPU cpu, final NES nes) {
         super(system);
@@ -98,6 +106,8 @@ public class APU extends ProcessorBase {
         triangle = new TriangleChannel(system);
         noise = new NoiseChannel(system);
         dmc = new DMCChannel(system, this);
+        
+        mixer = new Mixer();
         
         setRegion();
     }
@@ -130,6 +140,31 @@ public class APU extends ProcessorBase {
         }
     }
     
+    public void setupPlayback(int sampleRate) {
+        samplePeriod = system.master;
+        sampleSingle = system.cpu * sampleRate;
+        
+        int samples[] = {samplePeriod, sampleSingle};
+        samples = Tools.reduce(samples);
+        samplePeriod = samples[0];
+        sampleSingle = samples[1];
+        soundBuffer = new short[sampleRate];
+    }
+    
+    private void updatePlayback() {
+        sampleCycles += sampleSingle;
+        
+        if (sampleCycles >= samplePeriod) {
+            sampleCycles -= samplePeriod;
+            
+            addSample();
+        }
+    }
+    
+    public void resetBuffer() {
+        rPosition = wPosition = 0;
+    }
+    
     public boolean bufferHasLessThan(int samples) {
         return ai.bufferHasLessThan(samples);
     }
@@ -146,6 +181,10 @@ public class APU extends ProcessorBase {
         frameIRQEnabled = true;
         sequencerMode = false;
         currentSequencer = 0;
+        
+        rPosition = wPosition = 0;
+        sampleCycles = 0;
+        soundBuffer = new short[sampleRate];
         
         pulse1.hardReset();
         pulse2.hardReset();
@@ -205,13 +244,13 @@ public class APU extends ProcessorBase {
                 
                 return result;
             case 0x4016:
-                nes.controllers.read(address);
                 result = (CPU.lastRead & 0xC0);
+                result |= nes.controllers.read(address) & 0x19;
                 
                 return result;
             case 0x4017:
-                nes.controllers.read(address);
                 result = (CPU.lastRead & 0xC0);
+                result |= nes.controllers.read(address) & 0x19;
                 
                 return result;
             default:
@@ -249,7 +288,7 @@ public class APU extends ProcessorBase {
                 break;
             case 0x4017:
                 sequencerMode = Tools.getbit(data, 7);
-                frameIRQEnabled = Tools.getbit(data, 6);
+                frameIRQEnabled = !Tools.getbit(data, 6);
                 
                 currentSequencer = 0;
                 
@@ -383,6 +422,7 @@ public class APU extends ProcessorBase {
         }
         
         clockChannels();
+        updatePlayback();
         super.cycle(cycles);
     }
     
@@ -442,6 +482,16 @@ public class APU extends ProcessorBase {
                 output = -80;
             }
         }
+        
+        soundBuffer[wPosition++ % sampleRate] = output;
+    }
+    
+    public short pullSample() {
+        while (rPosition >= wPosition) {
+            addSample();
+        }
+        
+        return soundBuffer[rPosition++ % sampleRate];
     }
     
     public short mixSamples() {
@@ -495,7 +545,8 @@ public class APU extends ProcessorBase {
 
             public static short mixSamples(int pulse1, int pulse2, int triangle, int noise, int dmc)
             {
-                return mix_table[pulse1][pulse2][triangle][noise][dmc];
+                return 0;
+//                return mix_table[pulse1][pulse2][triangle][noise][dmc];
             }
             public static short mixSamples(int pulse1, int pulse2, int triangle, int noise, int dmc, short exp)
             {

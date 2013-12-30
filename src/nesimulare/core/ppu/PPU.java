@@ -86,9 +86,9 @@ public class PPU extends ProcessorBase {
     //Least significant bits previously written into a PPU register
     private int latch;
     private int chr;
-    private int clipping;
+    private int grayScale;
     private int emphasis;
-    public int[] colors;
+    private int[] colors;
     public int[][] screen;
     private boolean oddSwap;
     private boolean sprite0hit, spriteOverflow;
@@ -108,7 +108,7 @@ public class PPU extends ProcessorBase {
     
     //OAM
     private int oamAddress;
-    private final int[] oam = new int[256];
+    private int[] oam = new int[256];
     private int oamDMAAddress = 0;
     private int oamData;
     private int oamCount = 0;
@@ -138,6 +138,7 @@ public class PPU extends ProcessorBase {
         }
         
         resetEvaluation();
+        
         fetch = new Fetch();
         spriteFetch = new Fetch();
         scroll = new Scroll();
@@ -149,7 +150,7 @@ public class PPU extends ProcessorBase {
         sprites = new Unit(256);
         
         chr = 0;
-        clipping = 0xF3;
+        grayScale = 0xF3;
         emphasis = 0;
         oddSwap = false;
         sprite0hit = spriteOverflow = false;
@@ -159,6 +160,12 @@ public class PPU extends ProcessorBase {
         
         hclock = 0;
         vclock = 0;
+        
+        oamAddress = 0;
+        oam = new int[256];
+        oamData = 0;
+        oamCount = 0;
+        oamSlot = 0;
     }
     
     private void setRegion() {
@@ -193,7 +200,7 @@ public class PPU extends ProcessorBase {
     }
     
     private void fetchNametable_1() {
-        fetch.name = ppuram.read(fetch.address);
+        fetch.name = ppuram.read(fetch.address) & 0xFF;
     }
     
     private void fetchAttribute_0() {
@@ -202,7 +209,7 @@ public class PPU extends ProcessorBase {
     }
     
     private void fetchAttribute_1() {
-        fetch.attribute = ppuram.read(fetch.address) >> ((scroll.address >> 4 & 0x04) | (scroll.address & 0x02));
+        fetch.attribute = (ppuram.read(fetch.address) & 0xFF) >> ((scroll.address >> 4 & 0x04) | (scroll.address & 0x02));
     }
     
     private void fetchBit0_0() {
@@ -211,7 +218,7 @@ public class PPU extends ProcessorBase {
     }
     
     private void fetchBit0_1() {
-        fetch.bit0 = ppuram.read(fetch.address);
+        fetch.bit0 = ppuram.read(fetch.address) & 0xFF;
     }
     
     private void fetchBit1_0() {
@@ -220,12 +227,12 @@ public class PPU extends ProcessorBase {
     }
     
     private void fetchBit1_1() {
-        fetch.bit1 = ppuram.read(fetch.address);
+        fetch.bit1 = ppuram.read(fetch.address) & 0xFF;
     }
     
     private void spriteFetchBit0_0() {
         final int index = hclock >> 3 & 7;
-        final int comparator = (vclock - buffer[index].y) ^ (!Tools.getbit(buffer[index].attribute, 7) ? 0xF : 0x0);
+        final int comparator = (vclock - buffer[index].y) ^ (Tools.getbit(buffer[index].attribute, 7) ? 0xF : 0x0);
         
         if (sprites.rasters == 0x10) {
             spriteFetch.address = (buffer[index].name << 0x0C & 0x1000) | (buffer[index].name << 0x04 & 0xFE0) |
@@ -238,7 +245,7 @@ public class PPU extends ProcessorBase {
     }
     
     private void spriteFetchBit0_1() {
-        spriteFetch.bit0 = ppuram.read(spriteFetch.address);
+        spriteFetch.bit0 = ppuram.read(spriteFetch.address) & 0xFF;
         
         if (Tools.getbit(buffer[hclock >> 3 & 0x7].attribute, 6)) {
             spriteFetch.bit0 = reverseCHRLookup[spriteFetch.bit0];
@@ -252,7 +259,7 @@ public class PPU extends ProcessorBase {
     }
     
     private void spriteFetchBit1_1() {
-        spriteFetch.bit1 = ppuram.read(spriteFetch.address);
+        spriteFetch.bit1 = ppuram.read(spriteFetch.address) & 0xFF;
         
         if (Tools.getbit(buffer[hclock >> 3 & 0x7].attribute, 6)) {
             spriteFetch.bit1 = reverseCHRLookup[spriteFetch.bit1];
@@ -288,15 +295,13 @@ public class PPU extends ProcessorBase {
                 }
                 
                 nmiRequest = false;
-                scroll.swap = false;
-                
-                nes.board.addressBus(scroll.address);
+                scroll.swap = true;
                 
                 return latch = data;
             
             //OAMDATA
             case 4:
-                return latch = oam[oamAddress];
+                return latch = oam[oamAddress & 0xFF];
                 
             //PPUDATA
             case 7:
@@ -309,6 +314,9 @@ public class PPU extends ProcessorBase {
                     tmp = chr;
                     chr = ppuram.read(scroll.address);
                 }
+                
+                scroll.address = (scroll.address + scroll.step) & 0x7FFF;
+                nes.board.addressBus(scroll.address);
                 
                 return latch = tmp;
             
@@ -328,27 +336,27 @@ public class PPU extends ProcessorBase {
 
                 //PPUCTRL
                 case 0:
-                    scroll.temp        = (scroll.temp & ~0xC000) | (data << 10 & 0x0C00);
+                    scroll.temp        = (scroll.temp & 0x73FF) | ((data & 3) << 10);
                     scroll.step        = Tools.getbit(data, 2) ? 0x20 : 0x1;
-                    sprites.address    = Tools.getbit(data, 3) ? 0x1000 : 0x0;
-                    background.address = Tools.getbit(data, 4) ? 0x1000 : 0x0;
+                    sprites.address    = Tools.getbit(data, 3) ? 0x1000 : 0x0000;
+                    background.address = Tools.getbit(data, 4) ? 0x1000 : 0x0000;
                     sprites.rasters    = Tools.getbit(data, 5) ? 0x10 : 0x8;
 
                     final boolean oldNMI = nmiOutput;
                     nmiOutput = Tools.getbit(data, 7);
 
-                    if (vclock == startNMI & hclock < 3) {
+                    if (vclock == startNMI && hclock < 3) {
                         cpu.interrupt(CPU.InterruptTypes.PPU, nmiOutput & nmiRequest);
                     }
 
-                    if (!oldNMI & nmiOutput & nmiRequest) {
+                    if (!oldNMI && nmiOutput && nmiRequest) {
                         cpu.interrupt(CPU.InterruptTypes.PPU, true);
                     }
                     break;
 
                 //PPUMASK
                 case 1:
-                    clipping = Tools.getbit(data, 0) ? 0x30 : 0x3F;
+                    grayScale = Tools.getbit(data, 0) ? 0x30 : 0x3F;
                     emphasis = (data & 0xE0) << 1;
 
                     background.clipped = !Tools.getbit(data, 1);
@@ -359,39 +367,43 @@ public class PPU extends ProcessorBase {
 
                 //OAMADDR
                 case 3:
-                    oamAddress = data & 0xFF;
+                    oamAddress = data;
                     break;
 
                 //OAMDATA
-                case 4:
+                case 4:            
                     if ((oamAddress & 0x03) == 0x02) {
-                        oam[oamAddress] = data & 0xE3;
+                        oam[oamAddress++] = (data & 0xE3);
                     } else {
-                        oam[oamAddress] = data;
+                        oam[oamAddress++] = data;
                     }
-
-                    oamAddress = (oamAddress + 1) & 0xFF;
+                    
+                    oamAddress &= 0xFF;
                     break;
 
                 //PPUSCROLL
                 case 5:
-                    if (scroll.swap = !scroll.swap) {
-                        scroll.temp = (scroll.temp & ~0x1F) | (data >> 3 & 0x1F);
+                    if (scroll.swap) {
+                        scroll.temp = (scroll.temp & 0x73F0) | ((data & 0xF8) >> 3);
                         scroll.fine = (data & 0x7);
                     } else {
-                        scroll.temp = (scroll.temp & ~0x73E0) | (data << 2 & 0x3E0) | (data << 12 & 0x7000);
+                        scroll.temp = (scroll.temp & 0x0C1F) | ((data & 7) << 12) | ((data & 0xF8) << 2);
                     }
+                    
+                    scroll.swap ^= true;
                     break;
 
                 //PPUADDR
                 case 6:
-                    if (scroll.swap = !scroll.swap) {
-                        scroll.temp = (scroll.temp & ~0xFF00) | (data << 8 & 0x3F00);
+                    if (scroll.swap) {
+                        scroll.temp = (scroll.temp & 0x00FF) | ((data & 0x3F) << 8);
                     } else {
-                        scroll.temp = (scroll.temp & ~0xFF) | (data & 0xFF);
+                        scroll.temp = (scroll.temp & 0x7F00) | data;
                         scroll.address = scroll.temp;
                         nes.board.addressBus(scroll.address);
                     }
+                    
+                    scroll.swap ^= true;
                     break;
 
                 //PPUDATA
@@ -424,9 +436,9 @@ public class PPU extends ProcessorBase {
             return;
         }
         
-        int position = buffer[index].x;
+        int position = buffer[index].x & 0xFF;
         final int object0 = buffer[index].zero ? 0x4000 : 0x0000;
-        final int infront = Tools.getbit(buffer[index].attribute, 5) ? 0x8000 : 0x0000;
+        final int infront = Tools.getbit(buffer[index].attribute, 5) ? 0x0000 : 0x8000;
         
         for (int i = 0; i < 8 && position < 256; i++, position++, spriteFetch.bit0 <<= 1, spriteFetch.bit1 <<= 1) {
             if (position > 255) {
@@ -506,11 +518,11 @@ public class PPU extends ProcessorBase {
                 }
                 
                 oamCount++;
-                comparator = (vclock - oamData) & Integer.MAX_VALUE;
+                comparator = (vclock - (oamData & 0xFF)) & Integer.MAX_VALUE;
                 
                 if (comparator >= sprites.rasters) {
                     if (oamCount != 64) {
-                        oamAddress = (oamCount != 2 ? oamAddress + 4 : 8) & 0xFF;
+                        oamAddress = (oamCount != 2 ? ((oamAddress + 4) & 0xFF) : 8);
                     } else {
                         oamAddress = 0;
                         spriteState = 9;
@@ -518,7 +530,7 @@ public class PPU extends ProcessorBase {
                 } else {
                     oamAddress = (oamAddress + 1) & 0xFF;
                     spriteState = 2;
-                    buffer[oamSlot].y = oamData;
+                    buffer[oamSlot].y = oamData & 0xFF;
                     buffer[oamSlot].zero = (oamCount == 1);
                 }
                 break;
@@ -526,18 +538,18 @@ public class PPU extends ProcessorBase {
             case 2:
                 oamAddress = (oamAddress + 1) & 0xFF;
                 spriteState = 3;
-                buffer[oamSlot].name = oamData;
+                buffer[oamSlot].name = oamData & 0xFF;
                 break;
                 
             case 3:
                 oamAddress = (oamAddress + 1) & 0xFF;
                 spriteState = 4;
-                buffer[oamSlot].attribute = oamData;
+                buffer[oamSlot].attribute = oamData & 0xFF;
                 break;
                 
             case 4:
-                buffer[oamSlot].x = oamData;
-                oamSlot++;
+                buffer[oamSlot].x = oamData & 0xFF;
+                oamSlot = (oamSlot + 1) & 0xFF;
                 
                 if (oamCount != 64) {
                     spriteState = oamSlot == 8 ? 5 : 1;
@@ -562,7 +574,7 @@ public class PPU extends ProcessorBase {
                 comparator = (vclock - oamData) & Integer.MAX_VALUE;
                 
                 if (comparator >= sprites.rasters) {
-                    oamAddress = ((oamAddress + 4) & 0xFC) + ((oamAddress + 1) & 0x3);
+                    oamAddress = (((oamAddress + 4) & 0xFC) + ((oamAddress + 1) & 0x3));
                     
                     if (oamAddress <= 5) {
                         spriteState = 9;
@@ -587,7 +599,7 @@ public class PPU extends ProcessorBase {
                 
             case 8:
                 spriteState = 9;
-                oamAddress = (oamAddress + 1) & 0xFF;
+               oamAddress = (oamAddress + 1) & 0xFF;
                 
                 if ((oamAddress & 0x3) == 0x3) {
                     oamAddress = (oamAddress + 1) & 0xFF;
@@ -597,7 +609,7 @@ public class PPU extends ProcessorBase {
                 break;
                 
             case 9:
-                oamAddress = (oamAddress + 0x4) & 0xFF;
+                oamAddress = (oamAddress + 4) & 0xFF;
                 break;
                 
             default:
@@ -782,9 +794,9 @@ public class PPU extends ProcessorBase {
                     int pixel;
                     
                     if ((scroll.address & 0x3F00) == 0x3F00) {
-                        pixel = colors[paletteIndexes[ppuram.read(scroll.address & 0x3FFF) & clipping | emphasis]];
+                        pixel = colors[paletteIndexes[ppuram.read(scroll.address & 0x3FFF) & grayScale | emphasis]];
                     } else {
-                        pixel = colors[paletteIndexes[ppuram.read(0x3F00) & clipping | emphasis]];
+                        pixel = colors[paletteIndexes[ppuram.read(0x3F00) & grayScale | emphasis]];
                     }
                     
                     screen[vclock][hclock] = pixel;
@@ -798,9 +810,9 @@ public class PPU extends ProcessorBase {
         if (hclock == 328) {
             if (oddFrame) {
                 if (vclock == endNMI) {
-                    oddSwap = !oddSwap;
+                    oddSwap ^= true;
                     
-                    if (!oddSwap && background.enabled) {
+                    if (!oddSwap & background.enabled) {
                         hclock++;
                     }
                 }
@@ -833,10 +845,8 @@ public class PPU extends ProcessorBase {
             nes.board.scanlineTick();
             
             //Trigger NMI
-            if (vclock == startNMI) {
-                if (nmiOutput) {
-                    cpu.interrupt(CPU.InterruptTypes.PPU, true);
-                }
+            if (vclock == startNMI && nmiOutput) {
+                cpu.interrupt(CPU.InterruptTypes.PPU, true);
             }
             
             if (vclock == endFrame) {
@@ -856,18 +866,18 @@ public class PPU extends ProcessorBase {
         for (int i = 0; i < 256; i++) {
             data = cpu.read(oamDMAAddress);
             cpu.write(0x2004, data);
-            oamDMAAddress = (oamDMAAddress + 1) & 0xFFFF;
+            oamDMAAddress = (++oamDMAAddress) & 0xFFFF;
         }
     }
     
     private void renderPixel() {
         final int bckgr = ppuram.read(0x3F00);
-        screen[vclock][hclock] = colors[paletteIndexes[bckgr & (clipping | emphasis)]];
+        screen[vclock][hclock] = colors[paletteIndexes[bckgr & (grayScale | emphasis)]];
         final int backgroundPixel = 0x3F00 | background.getPixel(hclock, scroll.fine);
         final int spritePixel = 0x3F10 | sprites.getPixel(hclock, 0);
         int pixel;
         
-        if (Tools.getbit(spritePixel, 15)) {
+        if ((spritePixel & 0x8000) != 0) {
             pixel = spritePixel;
         } else {
             pixel = backgroundPixel;
@@ -877,7 +887,7 @@ public class PPU extends ProcessorBase {
             pixel = spritePixel;
             
             if ((pixel & 0x3) == 0) {
-                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (clipping | emphasis)]];
+                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis)]];
             }
             
             return;
@@ -887,7 +897,7 @@ public class PPU extends ProcessorBase {
             pixel = backgroundPixel;
             
             if ((pixel & 0x3) == 0) {
-                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (clipping | emphasis)]];
+                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis)]];
             }
             
             return;
@@ -898,7 +908,7 @@ public class PPU extends ProcessorBase {
         }
         
         if ((pixel & 0x3) == 0) {
-                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (clipping | emphasis)]];
+                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis)]];
         }
     }
     

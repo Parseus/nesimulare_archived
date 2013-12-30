@@ -26,6 +26,7 @@ package nesimulare.gui;
 
 import nesimulare.core.Region;
 import nesimulare.core.boards.*;
+import nesimulare.core.memory.PPUMemory;
 
 public class ROMLoader {
     public GUIImpl gui;
@@ -33,7 +34,7 @@ public class ROMLoader {
     public String name;
     public int prgsize;
     public int chrsize;
-    public Board.MirrorType mirroring;
+    public PPUMemory.Mirroring mirroring;
     public int mappertype;
     public int submapper;
     private int prgoff;
@@ -83,8 +84,8 @@ public class ROMLoader {
                 mappertype += ((header[7] >> 4) << 4);
             }
         savesram = Tools.getbit(header[6], 1);
-        mirroring = Tools.getbit(header[6], 3) ? Board.MirrorType.FOUR_SCREEN_MIRROR : 
-                (Tools.getbit(header[6], 0) ? Board.MirrorType.V_MIRROR : Board.MirrorType.H_MIRROR);
+        mirroring = Tools.getbit(header[6], 3) ? PPUMemory.Mirroring.FOURSCREEN : 
+                (Tools.getbit(header[6], 0) ? PPUMemory.Mirroring.VERTICAL : PPUMemory.Mirroring.HORIZONTAL);
         if ((header[7] & 0x0C) == 0x08) {
             //iNES 2.0            
             mappertype |= (header[8] & 0x0F) << 8;
@@ -164,6 +165,8 @@ public class ROMLoader {
                 return new UxROM(prg, chr, trainer, (chrsize == 0));
             case 3:
                 return new CNROM(prg, chr, trainer, (chrsize == 0));
+            case 7:
+                return new AxROM(prg, chr, trainer, (chrsize == 0));
             default:
                 gui.messageBox("Couldn't load the ROM file!\nUnsupported mapper: " + mappertype);
                 return null;

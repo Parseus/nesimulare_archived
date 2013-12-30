@@ -22,36 +22,28 @@
  * THE SOFTWARE.
  */
 
-package nesimulare.core;
+package nesimulare.core.boards;
+
+import nesimulare.core.memory.PPUMemory;
+import nesimulare.gui.Tools;
 
 /**
  *
  * @author Parseus
  */
-public class Region {
-    public static class System {
-        public String name;
-        public int serial;
-        public int master;
-        public int cpu;
-        public int ppu;
-        public int apu;
-        
-        public System(String name, int serial, int master, int cpu, int ppu, int apu) {
-            this.name = name;
-            this.serial = serial;
-            this.master = master;
-            this.cpu = cpu;
-            this.ppu = ppu;
-            this.apu = apu;
-        }
+public class AxROM extends Board {
+    public AxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
     }
 
-    public static final System NTSC = new System("NTSC", 0, 236250000, 132, 44, 264);
-    public static final System PAL = new System("PAL", 1, 212813696, 128, 40, 256);
-    public static final System DENDY = new System("Dendy", 2, 228774792, 129, 43, 258);
-    
-    public int cycles;
-    public int period;
-    public int singleCycle;
+    @Override
+    public void writePRG(int address, int data) {
+        if (Tools.getbit(data, 4)) {
+            nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENA);
+        } else {
+            nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENB);
+        }
+        
+        super.switch32kPRGbank(data & 0x7);
+    }
 }

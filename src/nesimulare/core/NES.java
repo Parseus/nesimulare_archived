@@ -25,6 +25,7 @@
 package nesimulare.core;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import nesimulare.gui.FrameLimiter;
 import nesimulare.gui.GUIImpl;
 import nesimulare.gui.GUIInterface;
@@ -44,7 +45,7 @@ import nesimulare.core.ppu.PaletteGenerator;
  *
  * @author Parseus
  */
-public class NES implements Runnable {
+public class NES extends Thread {
     public CPU cpu;
     public APU apu;
     public PPU ppu;
@@ -57,22 +58,21 @@ public class NES implements Runnable {
     public GUIImpl gui = new GUIImpl(this);
     private ROMLoader loader;
     
-    public boolean enableFrameLimiter = false;
-    public long frameStartTime, framecount, frameDoneTime;
+    public boolean enableFrameLimiter = true;
+    public long framecount;
     public boolean runEmulation = false;
     private boolean softResetRequest = false;
     private boolean hardResetRequest = false;
     private String curRomPath, curRomName;
-    public static final boolean LOGGING = false;
+    public static final boolean LOGGING = true;
     
     public NES() {
+        super ("Emulation core");
+        
         try {
             java.awt.EventQueue.invokeAndWait(gui);
-        } catch (InterruptedException e) {
-            System.err.println("Could not initialize GUI. Exiting.");
-            System.exit(-1);
-        } catch (java.lang.reflect.InvocationTargetException f) {
-            System.err.println(f.getCause().toString());
+        } catch (InterruptedException | InvocationTargetException e) {
+            javax.swing.JOptionPane.showMessageDialog(null, "Could not initialze GUI: " + e.getMessage());
             System.exit(-1);
         }
     }
@@ -80,10 +80,16 @@ public class NES implements Runnable {
     public void initialize() {
         //Memory first
         cpuram = new CPUMemory(this);
-        ppuram = new PPUMemory(this);  
+        ppuram = new PPUMemory(this); 
+        
+        cpuram.initialize();
+        ppuram.initialize();
+        
+        frameLimiter = new FrameLimiter(this);
         cpu = new CPU(region, this);
         apu = new APU(region, cpu, this);
         ppu = new PPU(region, this, cpu, ppuram);
+        
         
         generatePalette();
         ppu.initialize();
@@ -97,16 +103,8 @@ public class NES implements Runnable {
         //set thread priority higher than the interface thread
         curRomPath = romtoload;
         loadROM(romtoload);
-        run();
+        start();
     }
-    
-//    Runnable render = new Runnable() {
-//        @Override
-//        public void run() {
-//            gui.render();
-//            Thread.yield();
-//        }
-//    };
     
     public void hardReset() {
         hardResetRequest = true;
@@ -118,6 +116,7 @@ public class NES implements Runnable {
         generatePalette();
         cpuram.hardReset();
         ppuram.hardReset();
+        frameLimiter.hardReset();
         board.hardReset();
         apu.hardReset();
         cpu.hardReset();
@@ -137,17 +136,13 @@ public class NES implements Runnable {
     }
     
     @Override
-    public void run() {
+    public synchronized void run() {
         if (board == null) {
             return;
         }
         
-        ppu.hclock = 0;
-        
         while (true) {
-            if (runEmulation) {
-                frameStartTime = System.nanoTime();
-                
+            if (runEmulation) {  
                 if (LOGGING) {
                     try {
                         cpu.fw.write(cpu.getCPUState().toTraceEvent() + " CYC:" + ppu.hclock + " SL:" + ppu.vclock + "\n");
@@ -162,18 +157,11 @@ public class NES implements Runnable {
                 
                 cpu.cycle();
                 
-                if (frameLimiter != null && enableFrameLimiter) {
-                    frameLimiter.sleep();
-                }
-                
-                frameDoneTime = System.nanoTime() - frameStartTime;
-                //System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
+                System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
             } else { 
-                frameLimiter.sleepFixed();
-                
-//                if (ppu != null && framecount > 1) {
-//                    java.awt.EventQueue.invokeLater(render);
-//                }
+                if (frameLimiter != null) {
+                    frameLimiter.sleepFixed();
+                }
             
                 if (softResetRequest) {
                     softResetRequest = false;
@@ -184,18 +172,8 @@ public class NES implements Runnable {
                     _hardReset();
                     runEmulation = true;
                 }
-            }
-            
-            if ((framecount & 2047) == 0) {
-                saveSRAM(true);
-            }
-            
-            ++framecount;
+            }  
         }  
-    }
-
-    public final long getFrameTime() {
-        return frameDoneTime;
     }
     
     public void setGUI(GUIImpl gui) {
@@ -221,10 +199,22 @@ public class NES implements Runnable {
     }
     
     public void finishFrame(GUIInterface gui) {
+        gui.setFrame(ppu.screen);
+        
         if (apu != null) {
+            apu.ai.outputSample(apu.pullSample());
             apu.ai.flushFrame(enableFrameLimiter);
         }
-        gui.setFrame(ppu.screen);
+        
+        if (frameLimiter != null && enableFrameLimiter) {
+            frameLimiter.sleep();
+        }
+        
+        if ((framecount & 2047) == 0) {
+            saveSRAM(true);
+        }
+            
+        ++framecount;
     }
     
     public void messageBox(final String message) {
@@ -235,7 +225,7 @@ public class NES implements Runnable {
         ppu.setupPalette(PaletteGenerator.generattePalette());
     }
     
-    public synchronized void loadROM(final String filename) {
+    public void loadROM(final String filename) {
         runEmulation = false;
         if (Tools.exists(filename) && (Tools.getExtension(filename).equalsIgnoreCase(".nes"))) {
             if (apu != null) {
@@ -298,6 +288,6 @@ public class NES implements Runnable {
     }
     
     public void toggleFrameLimiter() {
-        enableFrameLimiter = !enableFrameLimiter;
+        enableFrameLimiter ^= true;
     }
 }

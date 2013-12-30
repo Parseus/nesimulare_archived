@@ -218,6 +218,10 @@ public class PulseChannel extends APUChannel {
     }
     
     public final int getOutput() {
-        return output;
+        if (lenctr > 0 && validFreq) {
+            return output = dutySequences[dutyLength][dutyCycle] * volume;
+        } else {
+            return output = 0;
+        }
     }
 }

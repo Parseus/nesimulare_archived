@@ -45,8 +45,7 @@ public class SNROM extends Board {
     public void initialize() {
         super.initialize();
         
-        timer = 0;
-        
+        timer = 0;   
     }
     
     @Override

@@ -46,31 +46,39 @@ public final class PPUMemory extends Memory  {
     public PPUMemory(NES nes) {
         super(0x4000);
         this.nes = nes;
+    }
+    
+    @Override
+    public void initialize() {
         hardReset();
     }
     
     @Override
-    public int read(final int address) {
-        if (address >= 0x0000 && address <= 0x1FFF) {
-            return nes.board.readCHR(address);
-        } else if (address >= 0x2000 && address <= 0x3EFF) {
-            return readNametable(address);
-        } else if (address >= 0x3F00 && address <= 0x3FFF) {
-            return readPalette(address);
+    public int read(int address) {
+        final int addr = address & mask;
+        
+        if (addr >= 0x0000 && addr <= 0x1FFF) {
+            return nes.board.readCHR(addr);
+        } else if (addr >= 0x2000 && addr <= 0x3EFF) {
+            return readNametable(addr);
+        } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+            return readPalette(addr);
         } else {
             //Open bus
-            return address >> 8;
+            return addr >> 8;
         }
     }
     
     @Override
-    public void write(final int address, final int data) {
-        if (address >= 0x0000 && address <= 0x1FFF) {
-            nes.board.writeCHR(address, data);
-        } else if (address >= 0x2000 && address <= 0x3EFF) {
-            writeNametable(address, data);
-        } else if (address >= 0x3F00 && address <= 0x3FFF) {
-            writePalette(address, data);
+    public void write(int address, int data) {
+        final int addr = address & mask;
+        
+        if (addr >= 0x0000 && addr <= 0x1FFF) {
+            nes.board.writeCHR(addr, data);
+        } else if (addr >= 0x2000 && addr <= 0x3EFF) {
+            writeNametable(addr, data);
+        } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+            writePalette(addr, data);
         } 
     }
     
@@ -111,7 +119,7 @@ public final class PPUMemory extends Memory  {
     @Override
     public void hardReset() {
         nmtBank = new int[4];
-        setMirroring(0);
+        setMirroring(nes.getLoader().mirroring);
         
         /* Each NES has a different palette on power-on. This palette is still 
          * used as a 'canonical' palette for emulation by several emulators, though.*/
@@ -119,8 +127,11 @@ public final class PPUMemory extends Memory  {
             0x09, 0x01, 0x00, 0x01, 0x00, 0x02, 0x02, 0x0D, 0x08, 0x10, 0x08, 0x24, 0x00, 0x00, 0x04, 0x2C,     //Background palette
             0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 0x08, 0x3A, 0x00, 0x02, 0x00, 0x20, 0x2C, 0x08      //Sprite palette
         };
-        nmt = new int[][] {
-            new int[0x400], new int[0x400], new int[0x400], new int[0x400]
-        };
+        
+        nmt = new int[4][];
+        nmt[0] = new int[0x400];
+        nmt[1] = new int[0x400];
+        nmt[2] = new int[0x400];
+        nmt[3] = new int[0x400];
     }
 }

@@ -26,6 +26,7 @@ package nesimulare.gui;
 
 import nesimulare.core.NES;
 import javax.sound.sampled.*;
+import nesimulare.core.Region;
 
 /**
  *
@@ -33,7 +34,7 @@ import javax.sound.sampled.*;
  */
 public class Audio implements AudioInterface {
 
-    private boolean soundEnable;
+    public boolean soundEnable;
     private SourceDataLine sdl;
     private byte[] audiobuf;
     private int bufptr = 0;
@@ -41,9 +42,9 @@ public class Audio implements AudioInterface {
 
     public Audio(final NES nes, final int samplerate) {
         soundEnable = true;// nes.getPrefs().getBoolean("soundEnable", true);
-        outputvol = 100;  //(float) (nes.getPrefs().getInt("outputvol", 13107) / 16384.);
+        outputvol = (float)(13107/16384.);  //(float) (nes.getPrefs().getInt("outputvol", 13107) / 16384.);
         if (soundEnable) {
-            final int samplesperframe = (int) Math.ceil((samplerate * 2) / 60.);
+            final int samplesperframe = (int) Math.ceil((samplerate * 2) / (nes.region == Region.NTSC ? 60. : 50.));
             audiobuf = new byte[samplesperframe * 2];
             try {
                 AudioFormat af = new AudioFormat(
@@ -63,7 +64,7 @@ public class Audio implements AudioInterface {
             }
         }
     }
-
+    
     @Override
     public final void flushFrame(final boolean waitIfBufferFull) {
         if (soundEnable) {

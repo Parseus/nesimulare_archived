@@ -34,7 +34,7 @@ public class NESimulare {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            System.err.println(e.getCause().toString());
+            javax.swing.JOptionPane.showMessageDialog(null, e.getMessage());
         }
         
         nesimulare.core.NES core = new nesimulare.core.NES();

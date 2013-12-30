@@ -117,7 +117,7 @@ public class TriangleChannel extends APUChannel {
                 if (frequency < 4) {
                     output = 0;
                 } else {
-                    output = stepSequence[step] << 3;
+                    output = stepSequence[step];
                 }
             }
         }
@@ -129,7 +129,7 @@ public class TriangleChannel extends APUChannel {
         if (frequency < 4) {
             output = 0;
         } else {
-            output = stepSequence[step] << 3;
+            output = stepSequence[step];
         }
     }
     

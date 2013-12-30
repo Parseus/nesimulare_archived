@@ -34,14 +34,14 @@ public class PPUTypes {
     }
     
     public static class Scroll {
-        public boolean swap;
+        public boolean swap = true;
         public int address;
         public int fine;
         public int step = 1;
         public int temp;
         
         public void clockX() {
-            if ((address & 0x001F) == 0x001F) {
+            if ((address & 0x1F) == 0x1F) {
                 address ^= 0x041F;
             } else {
                 address++;

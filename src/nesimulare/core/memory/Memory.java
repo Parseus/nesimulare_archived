@@ -47,4 +47,6 @@ public class Memory {
     }
 
     public void hardReset() { }
+    
+    public void initialize() { }
 }

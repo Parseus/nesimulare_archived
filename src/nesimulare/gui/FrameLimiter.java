@@ -34,36 +34,30 @@ import nesimulare.core.Region;
 
 public class FrameLimiter {
     NES nes;
-    private long sleepingtest = 0;
-    public final long FRAME_NS;
+    public double fps;
+    private double framePeriod = (1.0 / 60.0988);
+    public double lastFrameTime;
 
     public FrameLimiter(NES nes) {
         this.nes = nes;
-        FRAME_NS = nes.region == Region.NTSC ? 16638935 : 19997200;
-        //forceHighResolutionTimer();
+        
+        hardReset();
+    }
+    
+    public final void hardReset() {
+        fps = (nes.region == Region.NTSC) ? 60.0988 : 50.0070;
+        framePeriod = 1.0 / fps;
     }
 
     public void sleep() {
         //Frame Limiter
-        final long timeleft = System.nanoTime() - nes.frameStartTime;
-        if (timeleft < FRAME_NS) {
-            final long sleepytime = (FRAME_NS - timeleft + sleepingtest);
-            if (sleepytime < 0) {
-                return;
-                //don't sleep at all.
-            }
-            sleepingtest = System.nanoTime();
-            try {
-                //System.err.println(sleepytime/ 1000000.);
-                Thread.sleep(sleepytime / 1000000);
-                // sleep for rest of the time until the next frame
-                } catch (InterruptedException ex) {
-            }
-            sleepingtest = System.nanoTime() - sleepingtest;
-            //now sleeping test has how many ns the sleep *actually* was
-            sleepingtest = sleepytime - sleepingtest;
-            //now sleepingtest has how much the next frame needs to be delayed by to make things match
+        double immediateFrameTime = System.nanoTime() - lastFrameTime;
+        
+        while (immediateFrameTime < framePeriod) {
+            immediateFrameTime = System.nanoTime() - lastFrameTime;
         }
+        
+        lastFrameTime = System.nanoTime();
     }
 
     public void sleepFixed() {
@@ -73,24 +67,5 @@ public class FrameLimiter {
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
-
-    }
-
-    public static void forceHighResolutionTimer() {
-        Thread daemon;
-        daemon = new Thread("ForceHighResolutionTimer") {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(99999999999L);
-                    } catch (InterruptedException e) {
-                        break;
-                    }
-                }
-            }
-        };
-        daemon.setDaemon(true);
-        daemon.start();
     }
 }

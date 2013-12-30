@@ -46,7 +46,6 @@ public class CPU extends ProcessorBase implements Opcodes {
     private static final int P_ZERO        = 0x02;
     private static final int P_IRQ_DISABLE = 0x04;
     private static final int P_DECIMAL     = 0x08;
-    private static final int P_BREAK       = 0x10;
     // Bit 5 is always '1'
     private static final int P_OVERFLOW    = 0x40;
     private static final int P_NEGATIVE    = 0x80;
@@ -161,7 +160,7 @@ public class CPU extends ProcessorBase implements Opcodes {
     }
 
     /**
-     * Synchronizes CPU with APU and PPU.
+     * Synchronizes CPU with APU and PPU (and optionally with MMC).
      */
     private void dispatch() {
         nes.apu.cycle(region.singleCycle);
@@ -296,7 +295,7 @@ public class CPU extends ProcessorBase implements Opcodes {
         state.sp = 0xfd;
 
         // Set the PC to the address stored in the reset vector
-        state.pc = address(read(RST_VECTOR_L), read(RST_VECTOR_H));
+        state.pc = address(ram.read(RST_VECTOR_L), ram.read(RST_VECTOR_H));
 
         // Clear instruction register.
         state.ir = 0;
@@ -306,7 +305,6 @@ public class CPU extends ProcessorBase implements Opcodes {
         state.zeroFlag = false;
         state.irqDisableFlag = true;
         state.decimalModeFlag = false;
-        state.breakFlag = false;
         state.overflowFlag = false;
         state.negativeFlag = false;
 
@@ -331,7 +329,7 @@ public class CPU extends ProcessorBase implements Opcodes {
     public void softReset() {
         state.irqDisableFlag = true;
         state.sp = (state.sp - 3) & 0xFF;
-        state.pc = address(read(RST_VECTOR_L), read(RST_VECTOR_H));
+        state.pc = address(ram.read(RST_VECTOR_L), ram.read(RST_VECTOR_H));
     }
     
     /**
@@ -364,30 +362,30 @@ public class CPU extends ProcessorBase implements Opcodes {
         effectiveAddress = 0;
 
         switch (irAddressMode) {
-            case ABS_A:
+            case ABS_A:     // Absolute
                 effectiveAddress = address(state.args[0], state.args[1]);
                 break;
-            case ABS_LC:
+            case ABS_LC:    // Absolute with an additional read
                 checkInterrupts();
                 effectiveAddress = address(state.args[0], state.args[1]);
-                break;
-            case ABX_R:
+                break;      
+            case ABX_R:     // Absolute,X (dummy read - on carry)
                 lo = state.args[0];
                 hi = state.args[1];
                 inc = (lo + state.x) >= 0x100;
                 
                 if (inc) {
-                    read(state.pc);
+                    read(xAddress(lo, hi));
                     hi = (hi + 1) & 0xff;
                 }
 
                 effectiveAddress = xAddress(lo, hi);
                 break;
-            case ABX_W:
+            case ABX_W:     // Absolute,X (dummy read - always)
                 lo = state.args[0];
                 hi = state.args[1];
                 inc = (lo + state.x) >= 0x100;
-                read(state.pc);
+                read(xAddress(lo, hi));
                 
                 if (inc) {                 
                     hi = (hi + 1) & 0xff;
@@ -395,25 +393,25 @@ public class CPU extends ProcessorBase implements Opcodes {
 
                 effectiveAddress = xAddress(lo, hi);
                 break;
-            case ABY_R:
+            case ABY_R:     // Absolute,Y (dummy read - on carry)
                 lo = state.args[0];
                 hi = state.args[1];
                 inc = (lo + state.y) >= 0x100;
                 lo = (lo + state.y) & 0xff;
                 
                 if (inc) {
-                    read(state.pc);
+                    read(address(lo, hi));
                     hi = (hi + 1) & 0xff;
                 }
 
                 effectiveAddress = address(lo, hi);
                 break;
-            case ABY_W:
+            case ABY_W:     // Absolute,Y (dummy read - always)
                 lo = state.args[0];
                 hi = state.args[1];
                 inc = (lo + state.y) >= 0x100;
                 lo = (lo + state.y) & 0xff;
-                read(state.pc);
+                read(address(lo, hi));
                 
                 if (inc) {                 
                     hi = (hi + 1) & 0xff;
@@ -421,21 +419,21 @@ public class CPU extends ProcessorBase implements Opcodes {
 
                 effectiveAddress = address(lo, hi);
                 break;
-            case IMM_A:
-            case REL_A:
+            case IMM_A:     // #Immediate
+            case REL_A:     // Relative
                 break;
-            case IMP_A:
+            case IMP_A:     // Implied
                 read(state.pc);
                 break;
-            case IMP_LC:
+            case IMP_LC:    // Implied with an additional check
                 checkInterrupts();
                 read(state.pc);
                 break;
-            case IND_A:
+            case IND_A:     // Indirect (for buggy JMP)
                 effectiveAddress = address(state.args[0], state.args[1]);
                 checkInterrupts();
                 break;
-            case INX_A:
+            case INX_A:     // (Zero Page,X)
                 tmp = read(state.args[0]);
                 tmp = (tmp + state.x) & 0xff;
                 
@@ -444,25 +442,25 @@ public class CPU extends ProcessorBase implements Opcodes {
                 
                 effectiveAddress = address(lo, hi);
                 break;
-            case INY_R:
+            case INY_R:     // (Zero Page),Y (dummy read - on carry)
                 lo = read(state.args[0]);
                 hi = read((state.args[0] + 1) & 0xff);
                 inc = (lo + state.y) >= 0x100;
                 lo = (lo + state.y) & 0xff;
                 
                 if (inc) {
-                    read(state.pc);
+                    read(address(lo, hi));
                     hi = (hi + 1) & 0xff;
                 }
                 
                 effectiveAddress = address(lo, hi);
                 break;
-            case INY_W:
+            case INY_W:     // (Zero Page),Y (dummy read - always)
                 lo = read(state.args[0]);
                 hi = read((state.args[0] + 1) & 0xff);
                 inc = (lo + state.y) >= 0x100;
                 lo = (lo + state.y) & 0xff;
-                read(state.pc);
+                read(address(lo, hi));
                 
                 if (inc) {
                     hi = (hi + 1) & 0xff;
@@ -470,14 +468,14 @@ public class CPU extends ProcessorBase implements Opcodes {
                 
                 effectiveAddress = address(lo, hi);
                 break;
-            case ZPG_A:
+            case ZPG_A:     // Zero Page
                 effectiveAddress = state.args[0];
                 break;
-            case ZPX_A:
+            case ZPX_A:     // Zero Page,X
                 effectiveAddress = zpxAddress(state.args[0]);
                 read(state.pc);
                 break;
-            case ZPY_A:
+            case ZPY_A:     // Zero Page,Y
                 effectiveAddress = zpyAddress(state.args[0]);
                 read(state.pc);
                 break;
@@ -485,10 +483,11 @@ public class CPU extends ProcessorBase implements Opcodes {
                 break;
         }
         
+        // Logging (debugging only)
         if (LOGGING) {
             try {
-                //note: this *might* trigger side effects if logging while executing
-                //code from i/o registers. So don't do that.
+                //Note: This *might* trigger side effects if logging while executing
+                //code from I/O registers. So don't do that.
                 fw.write(getCPUState().toTraceEvent() + " CYC:" + nes.ppu.hclock + " SL:" + nes.ppu.vclock + "\n");
                 
                 if (state.stepCounter == 0) {
@@ -501,10 +500,11 @@ public class CPU extends ProcessorBase implements Opcodes {
 
         // Execute
         switch (state.ir) {
-            case 0x00: // BRK - Force Interrupt - Implied
-                // Push program counter + 1 onto the stack
-                stackPush((state.pc + 1 >> 8) & 0xff); // PC high byte
-                stackPush(state.pc + 1 & 0xff);        // PC low byte
+            case 0x00: // BRK - BReaK - Implied
+                // Push program counter onto the stack
+                stackPush((state.pc >> 8) & 0xff); // PC high byte
+                stackPush(state.pc & 0xff);        // PC low byte
+                // Push status flag register (and bit 4) onto the stack
                 stackPush(state.getStatusFlag() | 0x10);
                 // Set the Interrupt Disabled flag.  RTI will clear it.
                 setIrqDisableFlag();
@@ -518,7 +518,7 @@ public class CPU extends ProcessorBase implements Opcodes {
                     }
                 }
                 
-                // Load interrupt vector address into PC
+                // Load interrupt vector address into PC (with possible NMI hijacking)
                 if (nmi) {
                     nmi = false;
                     state.pc = address(read(NMI_VECTOR_L), read(NMI_VECTOR_H));
@@ -526,18 +526,18 @@ public class CPU extends ProcessorBase implements Opcodes {
                     state.pc = address(read(IRQ_VECTOR_L), read(IRQ_VECTOR_H));
                 }
                 break;
-            case 0x08: // PHP - Push Processor Status - Implied
-                // Break flag is always set in the stack value.
+            case 0x08: // PHP - PusH Processor status - Implied
+                // Bit 4 is always set in the stack value.
                 checkInterrupts();
                 stackPush(state.getStatusFlag() | 0x10); 
                 break;
-            case 0x10: // BPL - Branch if Positive - Relative
+            case 0x10: // BPL - Branch on PLus - Relative
                 branch(!getNegativeFlag());
                 break;
-            case 0x18: // CLC - Clear Carry Flag - Implied
+            case 0x18: // CLC - CLear Carry - Implied
                 clearCarryFlag();
                 break;
-            case 0x20: // JSR - Jump to Subroutine - Implied
+            case 0x20: // JSR - Jump to SubRoutine - Implied
                 state.pc--;
                 stackPush((state.pc >> 8) & 0xff); // PC high byte
                 stackPush(state.pc & 0xff);        // PC low byte
@@ -545,105 +545,103 @@ public class CPU extends ProcessorBase implements Opcodes {
                 dispatch();
                 state.pc = address(state.args[0], state.args[1]);
                 break;
-            case 0x28: // PLP - Pull Processor Status - Implied
+            case 0x28: // PLP - PuLl Processor status - Implied
                 dispatch();
                 checkInterrupts();
                 setProcessorStatus(stackPop());
                 break;
-            case 0x30: // BMI - Branch if Minus - Relative
+            case 0x30: // BMI - Branch on MInus - Relative
                 branch(getNegativeFlag());
                 break;
-            case 0x38: // SEC - Set Carry Flag - Implied
+            case 0x38: // SEC - SEt Carry flag - Implied
                 setCarryFlag();
                 break;
-            case 0x40: // RTI - Return from Interrupt - Implied
+            case 0x40: // RTI - ReTurn from Interrupt - Implied
                 setProcessorStatus(stackPop());
                 lo = stackPop();
                 checkInterrupts();
                 hi = stackPop();
                 setProgramCounter(address(lo, hi));
                 break;
-            case 0x48: // PHA - Push Accumulator - Implied
+            case 0x48: // PHA - PusH Accumulator - Implied
                 checkInterrupts();
                 stackPush(state.a);
                 break;
-            case 0x50: // BVC - Branch if Overflow Clear - Relative
+            case 0x50: // BVC - Branch on oVerflow Clear - Relative
                 branch(!getOverflowFlag());
                 break;
-            case 0x58: // CLI - Clear Interrupt Disable - Implied
+            case 0x58: // CLI - CLear Interrupt - Implied
                 clearIrqDisableFlag();
                 break;
-            case 0x60: // RTS - Return from Subroutine - Implied
+            case 0x60: // RTS - ReTurn from Subroutine - Implied
                 lo = stackPop();
-                //dispatch();
                 hi = stackPop();
                 setProgramCounter(address(lo, hi) + 1);
                 checkInterrupts();
-                //dispatch();
                 break;
-            case 0x68: // PLA - Pull Accumulator - Implied
+            case 0x68: // PLA - PuLl Accumulator - Implied
                 dispatch();
                 checkInterrupts();
                 state.a = stackPop();
                 setArithmeticFlags(state.a);
                 break;
-            case 0x70: // BVS - Branch if Overflow Set - Relative
+            case 0x70: // BVS - Branch on oVerflow Set - Relative
                 branch(getOverflowFlag());
                 break;
-            case 0x78: // SEI - Set Interrupt Disable - Implied
+            case 0x78: // SEI - Set Interrupt - Implied
                 setIrqDisableFlag();
                 break;
-            case 0x88: // DEY - Decrement Y Register - Implied
+            case 0x88: // DEY - DEcrement Y - Implied
                 state.y = (state.y - 1) & 0xff;
                 setArithmeticFlags(state.y);
                 break;
-            case 0x8a: // TXA - Transfer X to Accumulator - Implied
+            case 0x8a: // TXA - Transfer X to A - Implied
                 state.a = state.x;
                 setArithmeticFlags(state.a);
                 break;
-            case 0x90: // BCC - Branch if Carry Clear - Relative
+            case 0x90: // BCC - Branch on Carry Clear - Relative
                 branch(!getCarryFlag());
                 break;
-            case 0x98: // TYA - Transfer Y to Accumulator - Implied
+            case 0x98: // TYA - Transfer Y to A - Implied
                 state.a = state.y;
                 setArithmeticFlags(state.a);
                 break;
-            case 0x9a: // TXS - Transfer X to Stack Pointer - Implied
+            case 0x9a: // TXS - Transfer X to Stack pointer - Implied
                 setStackPointer(state.x);
                 break;
-            case 0xa8: // TAY - Transfer Accumulator to Y - Implied
+            case 0xa8: // TAY - Transfer A to Y - Implied
                 state.y = state.a;
                 setArithmeticFlags(state.y);
                 break;
-            case 0xaa: // TAX - Transfer Accumulator to X - Implied
+            case 0xaa: // TAX - Transfer A to X - Implied
                 state.x = state.a;
                 setArithmeticFlags(state.x);
                 break;
-            case 0xb0: // BCS - Branch if Carry Set - Relative
+            case 0xb0: // BCS - Branch on Carry Set - Relative
                 branch(getCarryFlag());
                 break;
-            case 0xb8: // CLV - Clear Overflow Flag - Implied
+            case 0xb8: // CLV - CLear oVerflow - Implied
                 clearOverflowFlag();
                 break;
-            case 0xba: // TSX - Transfer Stack Pointer to X - Implied
+            case 0xba: // TSX - Transfer Stack pointer to X - Implied
                 state.x = getStackPointer();
                 setArithmeticFlags(state.x);
                 break;
-            case 0xc8: // INY - Increment Y Register - Implied
+            case 0xc8: // INY - INcrement Y - Implied
                 state.y = (state.y + 1) & 0xff;
                 setArithmeticFlags(state.y);
                 break;
-            case 0xca: // DEX - Decrement X Register - Implied
+            case 0xca: // DEX - DEcrement X - Implied
                 state.x = (state.x - 1) & 0xff;
                 setArithmeticFlags(state.x);
                 break;
-            case 0xd0: // BNE - Branch if Not Equal to Zero - Relative
+            case 0xd0: // BNE - Branch on Not Equal - Relative
                 branch(!getZeroFlag());
                 break;
-            case 0xd8: // CLD - Clear Decimal Mode - Implied
+            case 0xd8: // CLD - CLear Decimal - Implied
                 clearDecimalModeFlag();
                 break;
-            case 0xe8: // INX - Increment X Register - Implied
+            case 0xe8: // INX - INcrement X - Implied
                 state.x = (state.x + 1) & 0xff;
                 setArithmeticFlags(state.x);
                 break;
@@ -662,20 +660,22 @@ public class CPU extends ProcessorBase implements Opcodes {
             case 0x1A: case 0x3A: case 0x5A: case 0x7A: case 0xDA: case 0xEA: case 0xFA: // NOP - No OPeration
                 // Do nothing.
                 break;
-            case 0xf0: // BEQ - Branch if Equal to Zero - Relative
+            case 0xf0: // BEQ - Branch on EQual - Relative
                 branch(getZeroFlag());
                 break;
-            case 0xf8: // SED - Set Decimal Flag - Implied
+            case 0xf8: // SED - Set Decimal - Implied
                 setDecimalModeFlag();
                 break;
 
             /** JMP *****************************************************************/
-            case 0x4c: // JMP - Absolute
+            case 0x4c: // JMP - JuMP - Absolute
                 state.pc = address(state.args[0], state.args[1]);
                 break;
-            case 0x6c: // JMP - Indirect
+            case 0x6c: // JMP - JuMP - Indirect
                 lo = address(state.args[0], state.args[1]); // Address of low byte
 
+                //Indirect adressing modes are not able to fetch 
+                //an adress which crosses the page boundary
                 if (state.args[0] == 0xff) {
                     hi = address(0x00, state.args[1]);
                 } else {
@@ -736,6 +736,7 @@ public class CPU extends ProcessorBase implements Opcodes {
 
             /** AND - Logical AND ***************************************************/
             case 0x29: // #Immediate
+                checkInterrupts();
                 state.a &= state.args[0];
                 setArithmeticFlags(state.a);
                 break;
@@ -818,7 +819,6 @@ public class CPU extends ProcessorBase implements Opcodes {
             case 0x75: // Zero Page,X
             case 0x79: // Absolute,Y
             case 0x7d: // Absolute,X
-                checkInterrupts();
                 state.a = adc(state.a, read(effectiveAddress));
                 break;
 
@@ -874,6 +874,7 @@ public class CPU extends ProcessorBase implements Opcodes {
 
             /** LDY - Load Y Register ***********************************************/
             case 0xa0: // #Immediate
+                checkInterrupts();
                 state.y = state.args[0];
                 setArithmeticFlags(state.y);
                 break;
@@ -1114,10 +1115,10 @@ public class CPU extends ProcessorBase implements Opcodes {
                 break;
                 
             /** SAX - Store A & X *********************************************/
-            case 0x83:
-            case 0x87:
-            case 0x8F:
-            case 0x97:
+            case 0x83: // (Zero Page,X)
+            case 0x87: // Zero Page
+            case 0x8F: // Absolute
+            case 0x97: // Zero Page,Y
                 checkInterrupts();
                 write(effectiveAddress, state.a & state.x);
                 break;
@@ -1131,10 +1132,10 @@ public class CPU extends ProcessorBase implements Opcodes {
                 break;
                 
             /** AHX - Store A & X & high byte of the address in memory*********/    
-            case 0x93:
-            case 0x9F:
-                checkInterrupts();
+            case 0x93: // (Zero Page),Y
+            case 0x9F: // Absolute,Y
                 tmp = (state.a & state.x & ((effectiveAddress >> 8) + 1)) & 0xFF;
+                checkInterrupts();
                 if ((state.y + ((state.y - effectiveAddress) & 0xFF)) <= 0xFF) {
                     write(effectiveAddress, tmp);
                 } else {
@@ -1143,7 +1144,7 @@ public class CPU extends ProcessorBase implements Opcodes {
                 break;
                 
              /** TAS - Store A & X & high byte of the address in SP ***********/    
-            case 0x9B: 
+            case 0x9B: // Absolute,Y
                 state.sp = state.a & state.x;
                 checkInterrupts();
                 tmp = (state.sp & ((effectiveAddress >> 8) + 1)) & 0xFF;
@@ -1155,25 +1156,37 @@ public class CPU extends ProcessorBase implements Opcodes {
                 break;
                 
              /** SHY - Store Y & high byte of the address in memory ***********/    
-            case 0x9C:
-                tmp = (state.y & ((effectiveAddress >> 8) + 1)) & 0xFF;
-                checkInterrupts();
-                if ((state.x + ((state.x - effectiveAddress) & 0xFF)) <= 0xFF) {
-                    write(effectiveAddress, tmp);
-                } else {
-                    write(effectiveAddress, read(effectiveAddress));
+            case 0x9C: // Absolute,X
+                lo = effectiveAddress & 0xFF;
+                hi = (effectiveAddress >> 8) & 0xFF;
+                tmp = (state.y & (hi + 1)) & 0xFF;
+                
+                read(effectiveAddress);
+                lo = (lo + state.x) & 0xFF;
+                
+                if (lo < state.x) {
+                    hi = tmp;
                 }
+                
+                checkInterrupts();
+                write(address(lo, hi), tmp);
                 break;
                 
              /** SHX - Store X & high byte of the address in memory ***********/    
-            case 0x9E:
-                tmp = (state.x & ((effectiveAddress >> 8) + 1)) & 0xFF;
-                checkInterrupts();
-                if ((state.y + ((state.y - effectiveAddress) & 0xFF)) <= 0xFF) {
-                    write(effectiveAddress, tmp);
-                } else {
-                    write(effectiveAddress, read(effectiveAddress));
+            case 0x9E: // Absolute,Y
+                lo = effectiveAddress & 0xFF;
+                hi = (effectiveAddress >> 8) & 0xFF;
+                tmp = (state.x & (hi + 1)) & 0xFF;
+                
+                read(effectiveAddress);
+                lo = (lo + state.y) & 0xFF;
+                
+                if (lo < state.y) {
+                    hi = tmp;
                 }
+                
+                checkInterrupts();
+                write(address(lo, hi), tmp);
                 break;
             
              /** LAX - Load Accumulator and X *********************************/ 
@@ -1217,8 +1230,8 @@ public class CPU extends ProcessorBase implements Opcodes {
                 write(effectiveAddress, tmp);
                 break;
             
-             /** AXS - Stores (A & X - #imm) into X ***************************/    
-            case 0xCB:
+             /** AXS - Stores (A & X - #imm) into X **************************/    
+            case 0xCB: // #Immediate
                 checkInterrupts();
                 state.x = (state.a & state.x) - state.args[0];
                 setArithmeticFlags(state.x);
@@ -1226,13 +1239,13 @@ public class CPU extends ProcessorBase implements Opcodes {
                 break;
             
             /** ISC - INC + SBC **********************************************/
-            case 0xE3: 
-            case 0xE7:
-            case 0xEF:
-            case 0xF3:
-            case 0xF7:
-            case 0xFB:
-            case 0xFF:
+            case 0xE3: // (Zero Page,X)
+            case 0xE7: // Zero Page
+            case 0xEF: // Absolute
+            case 0xF3: // (Zero Page),Y
+            case 0xF7: // Zero Page,X
+            case 0xFB: // Absolute,Y
+            case 0xFF: // Absolute,X
                 tmp = read(effectiveAddress);
                 write(effectiveAddress, tmp);
                 tmp = (tmp + 1) & 0xff;
@@ -1241,7 +1254,7 @@ public class CPU extends ProcessorBase implements Opcodes {
                 write(effectiveAddress, tmp);
                 break;
            
-            /** KIL - Jams the CPU *******************************************/
+            /** KIL - Jams the CPU - Implied *********************************/
             case 0x02: case 0x12: case 0x22: case 0x32: case 0x42: case 0x52:
             case 0x62: case 0x72: case 0x92: case 0xB2: case 0xD2: case 0xF2:
                 checkInterrupts();
@@ -1301,6 +1314,10 @@ public class CPU extends ProcessorBase implements Opcodes {
         }
     }
 
+    /**
+     * 
+     * @param flag 
+     */
     private void branch(boolean flag) {
         checkInterrupts();
    
@@ -1359,8 +1376,7 @@ public class CPU extends ProcessorBase implements Opcodes {
      */
     private int sbc(int addr, int data) {
         checkInterrupts();
-        int result;
-        result = adc(addr, ~data);
+        final int result = adc(addr, ~data);
         setArithmeticFlags(result);
         
         return result;
@@ -1487,20 +1503,6 @@ public class CPU extends ProcessorBase implements Opcodes {
     }
 
     /**
-     * Sets a negative flag.
-     */
-    private void setNegativeFlag() {
-        state.negativeFlag = true;
-    }
-
-    /**
-     * Clears a negative flag
-     */
-    private void clearNegativeFlag() {
-        state.negativeFlag = false;
-    }
-
-    /**
      * @return the carry flag
      */
     private boolean getCarryFlag() {
@@ -1550,24 +1552,17 @@ public class CPU extends ProcessorBase implements Opcodes {
     }
 
     /**
-     * Sets the Zero Flag
-     */
-    private void setZeroFlag() {
-        state.zeroFlag = true;
-    }
-
-    /**
-     * Clears the Zero Flag
-     */
-    private void clearZeroFlag() {
-        state.zeroFlag = false;
-    }
-
-    /**
      * Set the IRQ disable flag
      */
     private void setIrqDisableFlag() {
         state.irqDisableFlag = true;
+    }
+    
+    /**
+     * @param irqDisableFlag The IRQ disable flag to set
+     */
+    private void setIrqDisableFlag(boolean irqDisableFlag) {
+        state.irqDisableFlag = irqDisableFlag;
     }
 
     /**
@@ -1584,6 +1579,13 @@ public class CPU extends ProcessorBase implements Opcodes {
         state.decimalModeFlag = true;
     }
 
+    /**
+     * @param decimalModeFlag The IRQ disable flag to set
+     */
+    private void setDecimalModeFlag(boolean decimalModeFlag) {
+        state.decimalModeFlag = decimalModeFlag;
+    }
+    
     /**
      * Clears the Decimal Mode Flag.
      */
@@ -1647,41 +1649,12 @@ public class CPU extends ProcessorBase implements Opcodes {
      * @value The value of the Process Status Register bits to be set.
      */
     private void setProcessorStatus(int value) {
-        if (Tools.getbit(value, 0)) {
-            setCarryFlag();
-        } else {
-            clearCarryFlag();
-        }
-
-        if (Tools.getbit(value, 1)) {
-            setZeroFlag();
-        } else {
-            clearZeroFlag();
-        }
-
-        if (Tools.getbit(value, 2)) {
-            setIrqDisableFlag();
-        } else {
-            clearIrqDisableFlag();
-        }
-
-        if (Tools.getbit(value, 3)) {
-            setDecimalModeFlag();
-        } else {
-            clearDecimalModeFlag();
-        }
-
-        if (Tools.getbit(value, 6)) {
-            setOverflowFlag();
-        } else {
-            clearOverflowFlag();
-        }
-
-        if (Tools.getbit(value, 7)) {
-            setNegativeFlag();
-        } else {
-            clearNegativeFlag();
-        }
+        setCarryFlag(Tools.getbit(value, 0));
+        setZeroFlag(Tools.getbit(value, 1));
+        setIrqDisableFlag(Tools.getbit(value, 2));
+        setDecimalModeFlag(Tools.getbit(value, 3));
+        setOverflowFlag(Tools.getbit(value, 6));
+        setNegativeFlag(Tools.getbit(value, 7));
     }
 
     /**
@@ -1739,7 +1712,7 @@ public class CPU extends ProcessorBase implements Opcodes {
      */
     private void stackPush(int data) {
         write(0x100 + state.sp, data);
-
+        
         if (state.sp == 0) {
             state.sp = 0xff;
         } else {
@@ -1759,7 +1732,7 @@ public class CPU extends ProcessorBase implements Opcodes {
             ++state.sp;
         }
 
-        return read(0x100 | state.sp);
+        return read(0x100 + state.sp);
     }
 
     /*
@@ -1864,8 +1837,10 @@ public class CPU extends ProcessorBase implements Opcodes {
         public boolean zeroFlag;
         public boolean irqDisableFlag;
         public boolean decimalModeFlag;
-        public boolean breakFlag;
         public boolean overflowFlag;
+        /**
+         * Step counter
+         */
         public long stepCounter = 0L;
 
         /**
@@ -1896,7 +1871,6 @@ public class CPU extends ProcessorBase implements Opcodes {
             this.zeroFlag = s.zeroFlag;
             this.irqDisableFlag = s.irqDisableFlag;
             this.decimalModeFlag = s.decimalModeFlag;
-            this.breakFlag = s.breakFlag;
             this.overflowFlag = s.overflowFlag;
             this.stepCounter = s.stepCounter;
         }
@@ -1939,9 +1913,6 @@ public class CPU extends ProcessorBase implements Opcodes {
             }
             if (decimalModeFlag) {
                 status |= P_DECIMAL;
-            }
-            if (breakFlag) {
-                status |= P_BREAK;
             }
             if (overflowFlag) {
                 status |= P_OVERFLOW;
@@ -1992,12 +1963,18 @@ public class CPU extends ProcessorBase implements Opcodes {
 
             switch (instructionModes[ir]) {
                 case ABS_A:
-                    if ("LDA".equals(mnemonic) || "LDX".equals(mnemonic) || "LDY".equals(mnemonic)) {
-                        sb.append(" $").append(Tools.wordToHex(address(args[0], args[1]))).append(" = ").append(Tools.byteToHex(lastRead));
-                    } else if ("JSR".equals(mnemonic)) {
-                        sb.append(" $").append(Tools.wordToHex(address(args[0], args[1])));
-                    } else {
-                        sb.append(" $").append(Tools.wordToHex(address(args[0], args[1]))).append(" = ").append(Tools.byteToHex(lastWrite));
+                    switch (mnemonic) {
+                        case "LDA":
+                        case "LDX":
+                        case "LDY":
+                            sb.append(" $").append(Tools.wordToHex(address(args[0], args[1]))).append(" = ").append(Tools.byteToHex(lastRead));
+                            break;
+                        case "JSR":
+                            sb.append(" $").append(Tools.wordToHex(address(args[0], args[1])));
+                            break;
+                        default:
+                            sb.append(" $").append(Tools.wordToHex(address(args[0], args[1]))).append(" = ").append(Tools.byteToHex(lastWrite));
+                            break;
                     }
                     break;
                 case ABS_LC:
@@ -2097,7 +2074,7 @@ public class CPU extends ProcessorBase implements Opcodes {
             sb.append(negativeFlag ? 'N' : '.');    // Bit 7
             sb.append(overflowFlag ? 'V' : '.');    // Bit 6
             sb.append("-");                         // Bit 5 (always 1)
-            sb.append(breakFlag ? 'B' : '.');       // Bit 4
+            sb.append(".");                         // Bit 4
             sb.append(decimalModeFlag ? 'D' : '.'); // Bit 3
             sb.append(irqDisableFlag ? 'I' : '.');  // Bit 2
             sb.append(zeroFlag ? 'Z' : '.');        // Bit 1

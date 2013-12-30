@@ -35,6 +35,10 @@ public class CPUMemory extends Memory  {
     public CPUMemory(NES nes) {
         super(0x10000);
         this.nes = nes;
+    }
+    
+    @Override
+    public void initialize() {
         hardReset();
     }
     
@@ -66,7 +70,7 @@ public class CPUMemory extends Memory  {
         } else if (address < 0x2000) {
             wram[address & 0x7FF] = data;
         } else if (address < 0x4000 || address == 0x4014) {
-            nes.ppu.write(address, (byte)data);
+            nes.ppu.write(address, data);
         } else if (address >= 0x4000 && address <= 0x4018) {
             nes.apu.write(address, data);
         } else if (address < 0x6000) {

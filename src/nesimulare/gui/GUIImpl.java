@@ -24,13 +24,7 @@
 
 package nesimulare.gui;
 
-import java.awt.Canvas;
-import java.awt.Color;
-import java.awt.DisplayMode;
-import java.awt.FileDialog;
-import java.awt.Graphics;
-import java.awt.GraphicsDevice;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -50,7 +44,6 @@ import java.util.Date;
 import javax.swing.*;
 import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
 import nesimulare.core.NES;
-import nesimulare.core.Region;
 import nesimulare.core.input.Joypad;
 
 /**
@@ -70,12 +63,9 @@ public class GUIImpl extends JFrame implements GUIInterface {
     private BufferedImage screen;
     private GraphicsDevice gd;
     private int screenScaleFactor = 2;
-    private long[] frametimes;
-    private int frametimeptr = 0;
     private boolean bilinearFiltering, inFullScreen = false;
     private static final int NES_HEIGHT = 224; 
     private int NES_WIDTH;
-    private double fps;
     
     public GUIImpl(NES nes) {
         super();
@@ -86,7 +76,6 @@ public class GUIImpl extends JFrame implements GUIInterface {
         nes.setControllers(joypad1, joypad2);
         joypad1.startEventQueue();
         joypad2.startEventQueue();
-        frametimes = new long[nes.region == Region.NTSC ? 60 : 50];
     }
     
     public synchronized void setRenderOptions() {
@@ -95,13 +84,9 @@ public class GUIImpl extends JFrame implements GUIInterface {
         }
         //screenScaleFactor = PrefsSingleton.get().getInt("screenScaling", 2);
         //bilinearFiltering = PrefsSingleton.get().getBoolean("bilinearFiltering", false);
-        //if (PrefsSingleton.get().getBoolean("TVEmulation", false)) {
-        //    renderer = new NTSCRenderer();
-        //    NES_WIDTH = 302;
-        //} else {
-          renderer = new RGBRenderer();
-          NES_WIDTH = 256;
-        //}
+        renderer = new RGBRenderer();
+        NES_WIDTH = 256;
+        
         // Create canvas for painting
         canvas = new Canvas();
         canvas.setSize(NES_WIDTH * screenScaleFactor, NES_HEIGHT * screenScaleFactor);
@@ -115,20 +100,9 @@ public class GUIImpl extends JFrame implements GUIInterface {
     
     @Override
     public final synchronized void setFrame(int[][] frame) {
-        frametimes[frametimeptr] = nes.getFrameTime();
-        ++frametimeptr;
-        frametimeptr %= frametimes.length;
-
-        if (frametimeptr == 0) {
-            long averageframes = 0;
-            for (long l : frametimes) {
-                averageframes += l;
-            }
-            
-            fps = 1E9 / averageframes;
-            this.setTitle(String.format("NESimulare (%s) - %s, %2.2f fps",
-                    dateFormat.format(date), nes.getCurrentRomName(), fps));
-        }
+        final double fps = 1.0 / nes.frameLimiter.lastFrameTime;
+        this.setTitle(String.format("NESimulare (%s) - %s, %2.2f fps",
+            dateFormat.format(date), nes.getCurrentRomName(), fps));
         
         if (nes.framecount % 1 == 0) {
             screen = renderer.render(frame);

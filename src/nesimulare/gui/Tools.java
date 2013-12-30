@@ -255,4 +255,25 @@ public class Tools {
     public static int setbit(final int value, final int bit, final boolean state) {
         return (state) ? (value | (1 << bit)) : (value & ~(1 << bit));
     }
+    
+    public static int[] reduce(int toReduce[]) {
+        int gcf = gcf(toReduce[0], toReduce[1]);
+        
+        toReduce[0] /= gcf;
+        toReduce[1] /= gcf;
+        
+        return toReduce;
+    }
+    
+    private static int gcf(int a, int b) {
+        int remainder;
+        
+        while (b != 0) {
+            remainder = a % b;
+            a = b;
+            b = remainder;
+        }
+        
+        return a;
+    }
 }
