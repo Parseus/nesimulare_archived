@@ -41,8 +41,8 @@ public class Audio implements AudioInterface {
     private final float outputvol;
 
     public Audio(final NES nes, final int samplerate) {
-        soundEnable = true;// nes.getPrefs().getBoolean("soundEnable", true);
-        outputvol = (float)(13107/16384.);  //(float) (nes.getPrefs().getInt("outputvol", 13107) / 16384.);
+        soundEnable = PrefsSingleton.get().getBoolean("soundEnable", true);
+        outputvol = (float) (PrefsSingleton.get().getInt("outputvol", 13107) / 16384.);
         if (soundEnable) {
             final int samplesperframe = (int) Math.ceil((samplerate * 2) / (nes.region == Region.NTSC ? 60. : 50.));
             audiobuf = new byte[samplesperframe * 2];

@@ -8,7 +8,9 @@
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/Audio.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/ROMLoader.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/NES.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/NESimulare.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/audio/APU.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/GUIInterface.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/memory/PPUMemory.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/FrameLimiter.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/ppu/PPU.java</file>

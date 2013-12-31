@@ -28,11 +28,7 @@ import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
+import java.awt.event.*;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -62,10 +58,10 @@ public class GUIImpl extends JFrame implements GUIInterface {
     private Renderer renderer;
     private BufferedImage screen;
     private GraphicsDevice gd;
-    private int screenScaleFactor = 2;
+    private int screenScaleFactor;
     private boolean bilinearFiltering, inFullScreen = false;
     private static final int NES_HEIGHT = 224; 
-    private int NES_WIDTH;
+    private static final int NES_WIDTH = 256;
     
     public GUIImpl(NES nes) {
         super();
@@ -82,10 +78,9 @@ public class GUIImpl extends JFrame implements GUIInterface {
         if (canvas != null) {
             this.remove(canvas);
         }
-        //screenScaleFactor = PrefsSingleton.get().getInt("screenScaling", 2);
-        //bilinearFiltering = PrefsSingleton.get().getBoolean("bilinearFiltering", false);
+        screenScaleFactor = PrefsSingleton.get().getInt("screenScaling", 2);
+        bilinearFiltering = PrefsSingleton.get().getBoolean("bilinearFiltering", false);
         renderer = new RGBRenderer();
-        NES_WIDTH = 256;
         
         // Create canvas for painting
         canvas = new Canvas();
@@ -100,7 +95,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
     
     @Override
     public final synchronized void setFrame(int[][] frame) {
-        final double fps = 1.0 / nes.frameLimiter.lastFrameTime;
+        final double fps = 1.0 / nes.frameLimiter.currentFrameTime;
         this.setTitle(String.format("NESimulare (%s) - %s, %2.2f fps",
             dateFormat.format(date), nes.getCurrentRomName(), fps));
         
@@ -164,10 +159,10 @@ public class GUIImpl extends JFrame implements GUIInterface {
         fileDialog.setMode(FileDialog.LOAD);
         fileDialog.setTitle("Select a ROM to load");
         //should open last folder used, and if that doesn't exist, the folder it's running in
-        //final String path = PrefsSingleton.get().get("filePath", System.getProperty("user.dir", ""));
-        final File startDirectory = new File("F:\\Gry\\Gry na NES");
+        final String path = PrefsSingleton.get().get("filePath", System.getProperty("user.dir", ""));
+        final File startDirectory = new File(path);
         if (startDirectory.isDirectory()) {
-            fileDialog.setDirectory("F:\\Gry\\Gry na NES");
+            fileDialog.setDirectory(path);
         }
 
         fileDialog.setFilenameFilter(new FilenameFilter() {
@@ -185,7 +180,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
         }
         fileDialog.setVisible(true);
         if (fileDialog.getFile() != null) {
-            //PrefsSingleton.get().put("filePath", fileDialog.getDirectory());
+            PrefsSingleton.get().put("filePath", fileDialog.getDirectory());
             loadROM(fileDialog.getDirectory() + fileDialog.getFile());
         }
         if (wasInFullScreen) {
@@ -223,15 +218,24 @@ public class GUIImpl extends JFrame implements GUIInterface {
         item.addActionListener(listener);
         item.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
                 Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
-
-        nesmenu.addSeparator();
-
-        nesmenu.add(item = new JMenuItem("Controller Settings"));
-        item.addActionListener(listener);
-        item.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,
-                Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
-
+        
         menus.add(nesmenu);
+        
+        JMenu options = new JMenu("Options");
+        options.add(item = new JMenuItem("General..."));
+        item.addActionListener(listener);
+
+        options.addSeparator();
+        
+        options.add(item = new JMenuItem("Controllers..."));
+        item.addActionListener(listener);
+        
+        menus.add(options);
+
+        JMenu debug = new JMenu("Debug");
+        debug.add(item = new JCheckBoxMenuItem("Enable logging"));
+        item.addItemListener(listener);
+        menus.add(debug);
 
         JMenu help = new JMenu("Help");
         help.add(item = new JMenuItem("About"));
@@ -241,12 +245,16 @@ public class GUIImpl extends JFrame implements GUIInterface {
         this.setJMenuBar(menus);
     }
 
+    private double getmaxscale(final int width, final int height) {
+        return Math.min(height / (double) NES_HEIGHT, width / (double) NES_WIDTH);
+    }
+    
     @Override
     public final synchronized void render() {
         final Graphics graphics = buffer.getDrawGraphics();
-        //if (bilinearFiltering) {
-        //    ((Graphics2D) graphics).setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        //}
+        if (bilinearFiltering) {
+            ((Graphics2D) graphics).setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        }
         if (inFullScreen) {
             graphics.setColor(Color.BLACK);
             final DisplayMode dm = gd.getDisplayMode();
@@ -254,18 +262,18 @@ public class GUIImpl extends JFrame implements GUIInterface {
             final int scrnwidth = dm.getWidth();
             canvas.setSize(scrnwidth, scrnheight);
             graphics.fillRect(0, 0, scrnwidth, scrnheight);
-//            if (PrefsSingleton.get().getBoolean("maintainAspect", true)) {
-//                double scalefactor = getmaxscale(scrnwidth, scrnheight);
-//                int height = (int) (NES_HEIGHT * scalefactor);
-//                int width = (int) (256 * scalefactor * 1.1666667);
-//                graphics.drawImage(frame, ((scrnwidth / 2) - (width / 2)),
-//                        ((scrnheight / 2) - (height / 2)),
-//                        width,
-//                        height,
-//                        null);
-//            } else {
+            if (PrefsSingleton.get().getBoolean("maintainAspect", true)) {
+                double scalefactor = getmaxscale(scrnwidth, scrnheight);
+                int height = (int) (NES_HEIGHT * scalefactor);
+                int width = (int) (256 * scalefactor * 1.1666667);
+                graphics.drawImage(screen, ((scrnwidth / 2) - (width / 2)),
+                        ((scrnheight / 2) - (height / 2)),
+                        width,
+                        height,
+                        null);
+            } else {
                 graphics.drawImage(screen, 0, 0, scrnwidth, scrnheight, null);
-            //}
+            }
             graphics.setColor(Color.DARK_GRAY);
             graphics.drawString(this.getTitle(), 16, 16);
         } else {
@@ -274,7 +282,6 @@ public class GUIImpl extends JFrame implements GUIInterface {
 
         graphics.dispose();
         buffer.show();
-
     }
     
     public void toggleFullScreen() {
@@ -307,7 +314,28 @@ public class GUIImpl extends JFrame implements GUIInterface {
         nes.run(path);
     }
     
-    class Listener implements ActionListener, WindowListener {
+    private void showGeneralOptions() {
+        final GeneralOptionsDialog dialog = new GeneralOptionsDialog(this);
+        dialog.setVisible(true);
+        if (dialog.isOKClicked()) {
+            setRenderOptions();
+            
+            if (nes.apu != null) {
+                nes.apu.setupPlayback();
+            }
+        }
+    }
+    
+    private void showControlsDialog() {
+        final ControlsDialog dialog = new ControlsDialog(this);
+        dialog.setVisible(true);
+        if (dialog.isOKClicked()) {
+            joypad1.setButtons();
+            joypad2.setButtons();
+        }
+    }
+    
+    class Listener implements ActionListener, WindowListener, ItemListener {
 
         @Override
         public void actionPerformed(final ActionEvent arg0) {
@@ -345,7 +373,18 @@ public class GUIImpl extends JFrame implements GUIInterface {
                         nes.saveSRAM(false);
                         System.exit(0);
                     }   break;
+                case "Controllers...":
+                    showControlsDialog();
+                    break;
+                case "General...":
+                    showGeneralOptions();
+                    break;
             }
+        }
+        
+        @Override
+        public void itemStateChanged(ItemEvent ie) {
+            NES.LOGGING = (ie.getStateChange() == ItemEvent.SELECTED);
         }
 
         @Override

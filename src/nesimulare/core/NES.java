@@ -64,7 +64,8 @@ public class NES extends Thread {
     private boolean softResetRequest = false;
     private boolean hardResetRequest = false;
     private String curRomPath, curRomName;
-    public static final boolean LOGGING = true;
+    public static boolean LOGGING = false;
+    public static final boolean INTERIM = true;
     
     public NES() {
         super ("Emulation core");
@@ -157,7 +158,7 @@ public class NES extends Thread {
                 
                 cpu.cycle();
                 
-                System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
+                //System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
             } else { 
                 if (frameLimiter != null) {
                     frameLimiter.sleepFixed();

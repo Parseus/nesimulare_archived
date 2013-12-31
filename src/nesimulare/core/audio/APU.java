@@ -30,6 +30,7 @@ import nesimulare.core.ProcessorBase;
 import nesimulare.core.cpu.CPU;
 import nesimulare.gui.Audio;
 import nesimulare.gui.AudioInterface;
+import nesimulare.gui.PrefsSingleton;
 import nesimulare.gui.Tools;
 
 /**
@@ -140,7 +141,14 @@ public class APU extends ProcessorBase {
         }
     }
     
-    public void setupPlayback(int sampleRate) {
+    public void setupPlayback() {
+        sampleRate = PrefsSingleton.get().getInt("sampleRate", 44100);
+        
+        if (ai != null) {
+            ai.destroy();
+        }
+        ai = new Audio(nes, sampleRate);
+        
         samplePeriod = system.master;
         sampleSingle = system.cpu * sampleRate;
         

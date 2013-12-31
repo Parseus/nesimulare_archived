@@ -36,6 +36,7 @@ public class FrameLimiter {
     NES nes;
     public double fps;
     private double framePeriod = (1.0 / 60.0988);
+    public double currentFrameTime;
     public double lastFrameTime;
 
     public FrameLimiter(NES nes) {
@@ -51,7 +52,7 @@ public class FrameLimiter {
 
     public void sleep() {
         //Frame Limiter
-        double immediateFrameTime = System.nanoTime() - lastFrameTime;
+        double immediateFrameTime = currentFrameTime = System.nanoTime() - lastFrameTime;
         
         while (immediateFrameTime < framePeriod) {
             immediateFrameTime = System.nanoTime() - lastFrameTime;
