@@ -40,6 +40,7 @@ import java.util.Date;
 import javax.swing.*;
 import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
 import nesimulare.core.NES;
+import nesimulare.core.Region;
 import nesimulare.core.input.Joypad;
 
 /**
@@ -78,6 +79,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
         if (canvas != null) {
             this.remove(canvas);
         }
+        
         screenScaleFactor = PrefsSingleton.get().getInt("screenScaling", 2);
         bilinearFiltering = PrefsSingleton.get().getBoolean("bilinearFiltering", false);
         renderer = new RGBRenderer();
@@ -115,8 +117,10 @@ public class GUIImpl extends JFrame implements GUIInterface {
         //construct window
         this.setTitle("NESimulare (" + dateFormat.format(date) + ")");
         this.setResizable(false);
+        
         buildMenus();
         setRenderOptions();
+        
         this.getRootPane().registerKeyboardAction(listener, "Escape",
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
         this.getRootPane().registerKeyboardAction(listener, "Toggle Fullscreen",
@@ -141,16 +145,20 @@ public class GUIImpl extends JFrame implements GUIInterface {
                 if (!canImport(support)) {
                     return false;
                 }
+                
                 Transferable t = support.getTransferable();
+                
                 try {
                     File toload = (File) ((java.util.List) t.getTransferData(DataFlavor.javaFileListFlavor)).get(0);
                     loadROM(toload.getCanonicalPath());
                 } catch (UnsupportedFlavorException | IOException e) {
                     return false;
                 }
+                
                 return true;
             }
         };
+        
         this.setTransferHandler(handler);
     }
     
@@ -161,6 +169,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
         //should open last folder used, and if that doesn't exist, the folder it's running in
         final String path = PrefsSingleton.get().get("filePath", System.getProperty("user.dir", ""));
         final File startDirectory = new File(path);
+        
         if (startDirectory.isDirectory()) {
             fileDialog.setDirectory(path);
         }
@@ -172,17 +181,22 @@ public class GUIImpl extends JFrame implements GUIInterface {
                 return lowercaseName.endsWith(".nes");   
             }
         });
+        
         boolean wasInFullScreen = false;
+        
         if (inFullScreen) {
             wasInFullScreen = true;
             //load dialog won't show if we are in full screen, so this fixes for now.
             toggleFullScreen();
         }
+        
         fileDialog.setVisible(true);
+        
         if (fileDialog.getFile() != null) {
             PrefsSingleton.get().put("filePath", fileDialog.getDirectory());
             loadROM(fileDialog.getDirectory() + fileDialog.getFile());
         }
+        
         if (wasInFullScreen) {
             toggleFullScreen();
         }
@@ -219,6 +233,24 @@ public class GUIImpl extends JFrame implements GUIInterface {
         item.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
                 Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
         
+        nesmenu.addSeparator();
+        
+        JMenu region = new JMenu("Region");
+        ButtonGroup group = new ButtonGroup();
+        region.add(item = new JRadioButtonMenuItem("NTSC", true));
+        item.addItemListener(listener);
+        group.add(item);
+        
+        region.add(item = new JRadioButtonMenuItem("PAL", false));
+        item.addItemListener(listener);
+        group.add(item);
+        
+        region.add(item = new JRadioButtonMenuItem("Dendy", false));
+        item.addItemListener(listener);
+        group.add(item);
+        
+        nesmenu.add(region);
+        
         menus.add(nesmenu);
         
         JMenu options = new JMenu("Options");
@@ -233,7 +265,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
         menus.add(options);
 
         JMenu debug = new JMenu("Debug");
-        debug.add(item = new JCheckBoxMenuItem("Enable logging"));
+        debug.add(item = new JCheckBoxMenuItem("Enable logging", false));
         item.addItemListener(listener);
         menus.add(debug);
 
@@ -252,9 +284,11 @@ public class GUIImpl extends JFrame implements GUIInterface {
     @Override
     public final synchronized void render() {
         final Graphics graphics = buffer.getDrawGraphics();
+        
         if (bilinearFiltering) {
             ((Graphics2D) graphics).setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
         }
+        
         if (inFullScreen) {
             graphics.setColor(Color.BLACK);
             final DisplayMode dm = gd.getDisplayMode();
@@ -262,18 +296,18 @@ public class GUIImpl extends JFrame implements GUIInterface {
             final int scrnwidth = dm.getWidth();
             canvas.setSize(scrnwidth, scrnheight);
             graphics.fillRect(0, 0, scrnwidth, scrnheight);
+            
             if (PrefsSingleton.get().getBoolean("maintainAspect", true)) {
                 double scalefactor = getmaxscale(scrnwidth, scrnheight);
                 int height = (int) (NES_HEIGHT * scalefactor);
                 int width = (int) (256 * scalefactor * 1.1666667);
                 graphics.drawImage(screen, ((scrnwidth / 2) - (width / 2)),
                         ((scrnheight / 2) - (height / 2)),
-                        width,
-                        height,
-                        null);
+                        width, height, null);
             } else {
                 graphics.drawImage(screen, 0, 0, scrnwidth, scrnheight, null);
             }
+            
             graphics.setColor(Color.DARK_GRAY);
             graphics.drawString(this.getTitle(), 16, 16);
         } else {
@@ -317,6 +351,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
     private void showGeneralOptions() {
         final GeneralOptionsDialog dialog = new GeneralOptionsDialog(this);
         dialog.setVisible(true);
+        
         if (dialog.isOKClicked()) {
             setRenderOptions();
             
@@ -329,6 +364,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
     private void showControlsDialog() {
         final ControlsDialog dialog = new ControlsDialog(this);
         dialog.setVisible(true);
+        
         if (dialog.isOKClicked()) {
             joypad1.setButtons();
             joypad2.setButtons();
@@ -379,12 +415,38 @@ public class GUIImpl extends JFrame implements GUIInterface {
                 case "General...":
                     showGeneralOptions();
                     break;
+                default:
+                    break;
             }
         }
         
         @Override
         public void itemStateChanged(ItemEvent ie) {
-            NES.LOGGING = (ie.getStateChange() == ItemEvent.SELECTED);
+            Object source = ie.getSource();
+            
+            if (source instanceof JRadioButtonMenuItem) {
+                JRadioButtonMenuItem rb = (JRadioButtonMenuItem)source;
+                
+                switch (rb.getText()) {
+                    case "NTSC":
+                        nes.setRegion(Region.NTSC);
+                        break;
+                    case "PAL":
+                        nes.setRegion(Region.PAL);
+                        break;
+                    case "Dendy":
+                        nes.setRegion(Region.DENDY);
+                        break;
+                    default:
+                        break;
+                }
+            } else if (source instanceof JCheckBoxMenuItem) {
+                JCheckBoxMenuItem cb = (JCheckBoxMenuItem)source;
+                
+                if (cb.getText().equals("Enable logging")) {
+                    NES.LOGGING = (ie.getStateChange() == ItemEvent.SELECTED);
+                }
+            }
         }
 
         @Override

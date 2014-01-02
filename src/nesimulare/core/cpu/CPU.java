@@ -46,6 +46,7 @@ public class CPU extends ProcessorBase implements Opcodes {
     private static final int P_ZERO        = 0x02;
     private static final int P_IRQ_DISABLE = 0x04;
     private static final int P_DECIMAL     = 0x08;
+    // Bit 4 is only pushed onto the stack with BRK and PHP
     // Bit 5 is always '1'
     private static final int P_OVERFLOW    = 0x40;
     private static final int P_NEGATIVE    = 0x80;
@@ -293,6 +294,9 @@ public class CPU extends ProcessorBase implements Opcodes {
     public void hardReset() {
         // Registers
         state.sp = 0xfd;
+        state.a = 0;
+        state.x = 0;
+        state.y = 0;
 
         // Set the PC to the address stored in the reset vector
         state.pc = address(ram.read(RST_VECTOR_L), ram.read(RST_VECTOR_H));
@@ -311,11 +315,6 @@ public class CPU extends ProcessorBase implements Opcodes {
         // Reset step counter.
         state.stepCounter = 0L;
 
-        // Reset registers.
-        state.a = 0;
-        state.x = 0;
-        state.y = 0;
-        
         // Reset interrupt requests.
         nmi = false;
         interruptRequest = false;
@@ -663,7 +662,7 @@ public class CPU extends ProcessorBase implements Opcodes {
             case 0xf0: // BEQ - Branch on EQual - Relative
                 branch(getZeroFlag());
                 break;
-            case 0xf8: // SED - Set Decimal - Implied
+            case 0xf8: // SED - SEt Decimal - Implied
                 setDecimalModeFlag();
                 break;
 
@@ -1134,25 +1133,37 @@ public class CPU extends ProcessorBase implements Opcodes {
             /** AHX - Store A & X & high byte of the address in memory*********/    
             case 0x93: // (Zero Page),Y
             case 0x9F: // Absolute,Y
-                tmp = (state.a & state.x & ((effectiveAddress >> 8) + 1)) & 0xFF;
-                checkInterrupts();
-                if ((state.y + ((state.y - effectiveAddress) & 0xFF)) <= 0xFF) {
-                    write(effectiveAddress, tmp);
-                } else {
-                    write(effectiveAddress, read(effectiveAddress));
+                lo = effectiveAddress & 0xFF;
+                hi = (effectiveAddress >> 8) & 0xFF;
+                tmp = (state.a & state.x & (hi + 1)) & 0xFF;
+                
+                read(effectiveAddress);
+                lo = (lo + state.y) & 0xFF;
+                
+                if (lo < state.y) {
+                    hi = tmp;
                 }
+                
+                checkInterrupts();
+                write(address(lo, hi), tmp);
                 break;
                 
              /** TAS - Store A & X & high byte of the address in SP ***********/    
             case 0x9B: // Absolute,Y
-                state.sp = state.a & state.x;
-                checkInterrupts();
-                tmp = (state.sp & ((effectiveAddress >> 8) + 1)) & 0xFF;
-                if ((state.y + ((state.y - effectiveAddress) & 0xFF)) <= 0xFF) {
-                    write(effectiveAddress, tmp);
-                } else {
-                    write(effectiveAddress, read(effectiveAddress));
+                state.sp = state.a & state.x;                
+                lo = effectiveAddress & 0xFF;
+                hi = (effectiveAddress >> 8) & 0xFF;
+                tmp = (state.sp & (hi + 1)) & 0xFF;
+                
+                read(effectiveAddress);
+                lo = (lo + state.y) & 0xFF;
+                
+                if (lo < state.y) {
+                    hi = tmp;
                 }
+                
+                checkInterrupts();
+                write(address(lo, hi), tmp);
                 break;
                 
              /** SHY - Store Y & high byte of the address in memory ***********/    
@@ -1195,12 +1206,12 @@ public class CPU extends ProcessorBase implements Opcodes {
                 state.a = state.x = state.args[0];
                 setArithmeticFlags(state.a);
                 break;
-            case 0xA3:
-            case 0xA7:
-            case 0xAF:
-            case 0xB3:
-            case 0xB7:
-            case 0xBF:
+            case 0xA3: // (Zero Page,X)
+            case 0xA7: // Zero Page
+            case 0xAF: // Absolute
+            case 0xB3: // (Zero Page),Y
+            case 0xB7: // Zero Page,Y
+            case 0xBF: // Absolute,Y
                 checkInterrupts();
                 state.a = state.x = read(effectiveAddress);
                 setArithmeticFlags(state.a);
@@ -1215,13 +1226,13 @@ public class CPU extends ProcessorBase implements Opcodes {
                 break;
                 
             /** DCP - DEC + CMP **********************************************/
-            case 0xC3: 
-            case 0xC7:
-            case 0xCF:
-            case 0xD3:
-            case 0xD7:
-            case 0xDB:
-            case 0xDF:
+            case 0xC3: // (Zero Page,X)
+            case 0xC7: // Zero Page
+            case 0xCF: // Absolute
+            case 0xD3: // (Zero Page),Y
+            case 0xD7: // Zero Page,X
+            case 0xDB: // Absolute,Y
+            case 0xDF: // Absolute,X
                 tmp = read(effectiveAddress);
                 write(effectiveAddress, tmp);
                 tmp = (tmp - 1) & 0xff;

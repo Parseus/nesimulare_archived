@@ -26,11 +26,7 @@ package nesimulare.core;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import nesimulare.gui.FrameLimiter;
-import nesimulare.gui.GUIImpl;
-import nesimulare.gui.GUIInterface;
-import nesimulare.gui.ROMLoader;
-import nesimulare.gui.Tools;
+import nesimulare.gui.*;
 import nesimulare.core.audio.APU;
 import nesimulare.core.boards.Board;
 import nesimulare.core.cpu.CPU;
@@ -144,6 +140,8 @@ public class NES extends Thread {
         
         while (true) {
             if (runEmulation) {  
+                cpu.cycle();
+                
                 if (LOGGING) {
                     try {
                         cpu.fw.write(cpu.getCPUState().toTraceEvent() + " CYC:" + ppu.hclock + " SL:" + ppu.vclock + "\n");
@@ -153,12 +151,10 @@ public class NES extends Thread {
                         }
                     } catch (IOException ioe) {
                         messageBox("Cannot write to debug log: " + ioe.getMessage());
+                    } finally {
+                        System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
                     }
                 }
-                
-                cpu.cycle();
-                
-                //System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
             } else { 
                 if (frameLimiter != null) {
                     frameLimiter.sleepFixed();
@@ -238,6 +234,7 @@ public class NES extends Thread {
                 cpu = null;
                 cpuram = null;
                 ppu = null;
+                ppuram = null;
             }
 
             loader = new ROMLoader(filename, gui);

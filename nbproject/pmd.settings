@@ -1,3 +1,4 @@
+AtLeastOneConstructor
 TooManyMethods
 ShortMethodName
 DoNotUseThreads
@@ -9,10 +10,10 @@ MethodNamingConventions
 UseSingleton
 DataflowAnomalyAnalysis
 BooleanGetMethodName
-UnusedImports
-DoNotCallSystemExit
 AbstractNaming
-UnusedModifier
+DoNotCallSystemExit
+UnusedImports
 BeanMembersShouldSerialize
-AvoidDuplicateLiterals
+UnusedModifier
 OnlyOneReturn
+AvoidDuplicateLiterals
