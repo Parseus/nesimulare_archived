@@ -52,6 +52,12 @@ public class APUChannel extends ProcessorBase {
     }
 
     @Override
+    public void initialize() {
+        hardReset();
+        super.initialize();
+    }
+    
+    @Override
     public void hardReset() {
         lenctrHalt = false;
         lenctrHaltRequest = false;
@@ -80,6 +86,18 @@ public class APUChannel extends ProcessorBase {
             }
             
             lenctrReloadRequest = false;
+        }
+    }
+    
+    public boolean getStatus() {
+        return (lenctr > 0);
+    }
+    
+    public void setStatus(boolean status) {
+        lenctrReloadEnabled = status;
+        
+        if (!lenctrReloadEnabled) {
+            lenctr = 0;
         }
     }
 }

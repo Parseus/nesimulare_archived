@@ -37,20 +37,19 @@ public class DMCChannel extends APUChannel {
     
     APU apu;
     
-    private int cycles;
     private int output;
-    private int address, dmaAddress;
-    private int length;
+    private int sampleAddress, dmaAddress;
+    private int sampleLength;
     private int shiftRegister;
-    private int pcmData;
+    private int dmaSize;
     private int buffer, outbits;
     private boolean rdyRise = false;
     public boolean fetching;
     private boolean dmaLoop;
-    private boolean emptyBuffer;
+    private boolean dmaEnabled;
+    private boolean fullBuffer;
     private boolean irqEnabled;
     public boolean irqFlag;
-    private boolean silenced, enabled;
     
     public DMCChannel(nesimulare.core.Region.System system, final APU apu) {
         super(system);
@@ -59,29 +58,35 @@ public class DMCChannel extends APUChannel {
     }
     
     @Override
+    public void initialize() {
+        hardReset();
+        super.initialize();
+    }
+    
+    @Override
     public void hardReset() {
         super.hardReset();
         
-        cycles = 1;
-        outbits = 8;
-        shiftRegister = 0;
-        dmaAddress = address = length = 0;
+        outbits = 1;
+        shiftRegister = 1;
+        dmaAddress = 0;
+        sampleAddress = sampleLength = 0xC000;
+        dmaSize = 0;
         output = 0;
-        pcmData = 0;
         buffer = 0;
         dmaLoop = false;
+        dmaEnabled = false;
         rdyRise = true;
         fetching = false;
-        silenced = emptyBuffer = true; 
+        fullBuffer = false; 
         irqEnabled = irqFlag = false;
-        enabled = false;
     }
     
     @Override
     public void softReset() {
         super.softReset();
         
-        irqEnabled = irqFlag = false;
+        irqFlag = false;
         apu.cpu.interrupt(CPU.InterruptTypes.DMC, false);
     }
     
@@ -92,7 +97,6 @@ public class DMCChannel extends APUChannel {
              * IRQ enable (I), loop (L), frequency (R)
              */
             case 0:
-                frequency = data & 0xF;
                 dmaLoop = Tools.getbit(data, 6);
                 irqEnabled = Tools.getbit(data, 7);
                 
@@ -109,8 +113,7 @@ public class DMCChannel extends APUChannel {
              * Load counter (D)
              */
             case 1:
-                pcmData = data & 0x7F;
-                output = (pcmData - 0x40) * 3;
+                output = data & 0x7F;
                 break;
                 
             /**
@@ -118,7 +121,7 @@ public class DMCChannel extends APUChannel {
              * Sample address (A)
              */
             case 2:
-                address = data;
+                sampleAddress = (data << 6) | 0xC000;
                 break;
             
             /**
@@ -126,22 +129,7 @@ public class DMCChannel extends APUChannel {
              * Sample length (L)
              */    
             case 3:
-                length = data;
-                break;
-            
-            case 4:
-                enabled = (data != 0);
-                
-                if (enabled) {
-                    if (lenctr == 0) {
-                        dmaAddress = 0xC000 | (address << 6);
-                        lenctr = (length << 4) + 1;
-                    }
-                } else {
-                    lenctr = 0;
-                }
-                
-                apu.cpu.interrupt(CPU.InterruptTypes.DMC, false);
+                sampleLength = (data << 4) | 0x0001;
                 break;
                 
             default:
@@ -149,75 +137,89 @@ public class DMCChannel extends APUChannel {
         }
     }
     
+    
+    @Override
+    public boolean getStatus() {
+        return (dmaSize > 0);
+    }
+    
+    @Override
+    public void setStatus(boolean status) {
+        if (status) {
+            if (dmaSize == 0) {
+                dmaSize = sampleLength;
+                dmaAddress = sampleAddress;
+            }
+        } else {
+            dmaSize = 0;
+        }
+        
+        irqFlag = false;
+        apu.cpu.interrupt(CPU.InterruptTypes.DMC, false);
+    }
+    
     @Override
     public void clockChannel(boolean clockLength) {
-//        if (rdyRise && emptyBuffer && lenctr > 0) {
-//            rdyRise = false;
-//            apu.cpu.RDY(CPU.DMATypes.DMA);
-//        }
+        if (rdyRise && !fullBuffer && dmaSize > 0) {
+            rdyRise = false;
+            apu.cpu.RDY(CPU.DMATypes.DMA);
+        }
     }
     
     @Override
     public void cycle() {
-        if (--cycles == 0) {
-            cycles = dpcmFrequency[frequency];
-            
-            if (!silenced) {
-                if (Tools.getbit(shiftRegister, 0)) {
-                    if (pcmData <= 0x7D) {
-                        pcmData += 2;
-                    } 
-                } else {
-                    if (pcmData >= 0x02) {
-                        pcmData -= 2;
-                    }
+        if (dmaEnabled) {
+            if (Tools.getbit(shiftRegister, 0)) {
+                if (output <= 0x7D) {
+                    output += 2;
                 }
-                
-                shiftRegister >>= 1;
-                output = (pcmData - 0x40) * 3;
-            } 
-            
-            if (--outbits == 0) {
-                outbits = 8;
-                
-                if (!emptyBuffer) {
-                    shiftRegister = buffer;
-                    emptyBuffer = true;
-                    silenced = false;
-                    rdyRise = true;
-                    
-                    if (lenctr > 0) {
-                        rdyRise = false;
-                        apu.cpu.RDY(CPU.DMATypes.DMA);
-                    }
-                } else {
-                    silenced = true;
+            } else {
+                if (output >= 0x02) {
+                    output -= 2;
                 }
             }
+            
+            shiftRegister >>= 1;
         }
         
-        if (emptyBuffer && !fetching && (lenctr > 0)) {
-            fetching = true;
-            rdyRise = false;
-            apu.cpu.RDY(CPU.DMATypes.DMA);
-            lenctr--;
+        outbits--;
+        
+        if (outbits == 0) {
+            outbits = 8;
+            
+            if (fullBuffer) {
+                fullBuffer = false;
+                dmaEnabled = true;
+                rdyRise = true;
+                shiftRegister = buffer;
+                
+                if (dmaSize > 0) {
+                    rdyRise = false;
+                    apu.cpu.RDY(CPU.DMATypes.DMA);
+                }
+            } else {
+                dmaEnabled = false;
+            }
         }
     }
     
     public void fetch() {
         buffer = apu.cpu.read(dmaAddress);
-        emptyBuffer = false;
-        fetching = false;
+        fullBuffer = true;
         rdyRise = true;
         
         if (++dmaAddress == 0x10000) {
             dmaAddress = 0x8000;
         }
         
-        if (lenctr == 0) {
+        if (dmaSize > 0) {
+            dmaSize--;
+        }
+        
+        if (dmaSize == 0) {
             if (dmaLoop) {
-                dmaAddress = 0xC000 | (address << 6);
-                lenctr = (length << 4) + 1;
+                dmaAddress = sampleAddress;
+                dmaSize = sampleLength;
             } else if (irqEnabled) {
                 irqFlag = true;
                 apu.cpu.interrupt(CPU.InterruptTypes.DMC, true);
@@ -226,6 +228,6 @@ public class DMCChannel extends APUChannel {
     }
     
     public final int getOutput() {
-        return output;
+        return output & 0xFF;
     }
 }

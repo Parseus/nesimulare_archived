@@ -30,7 +30,7 @@ public class PPUTypes {
         public int attribute;
         public int bit0;
         public int bit1;
-        public int name;
+        public int nametable;
     }
     
     public static class Scroll {
@@ -79,7 +79,7 @@ public class PPUTypes {
     
     public static class Sprite {
         public int y;
-        public int name;
+        public int nametable;
         public int attribute;
         public int x;
         public boolean zero;

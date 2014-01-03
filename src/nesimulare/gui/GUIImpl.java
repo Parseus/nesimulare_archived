@@ -251,6 +251,11 @@ public class GUIImpl extends JFrame implements GUIInterface {
         
         nesmenu.add(region);
         
+        nesmenu.addSeparator();
+        
+        nesmenu.add(item = new JCheckBoxMenuItem("Toggle frame limiter", true));
+        item.addItemListener(listener);
+        
         menus.add(nesmenu);
         
         JMenu options = new JMenu("Options");
@@ -387,9 +392,6 @@ public class GUIImpl extends JFrame implements GUIInterface {
                 case "Hard Reset":
                     nes.hardReset();
                     break;
-                case "Fast Forward":
-                    nes.toggleFrameLimiter();
-                    break;
                 case "About":
                     messageBox("NESimulare (" + dateFormat.format(date) + ")"
                             + "\n"
@@ -445,6 +447,8 @@ public class GUIImpl extends JFrame implements GUIInterface {
                 
                 if (cb.getText().equals("Enable logging")) {
                     NES.LOGGING = (ie.getStateChange() == ItemEvent.SELECTED);
+                } else if (cb.getText().equals("Toggle frame limiter")) {
+                    nes.toggleFrameLimiter();
                 }
             }
         }

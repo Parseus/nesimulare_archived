@@ -31,28 +31,39 @@ import nesimulare.gui.Tools;
  * @author Parseus
  */
 public class TriangleChannel extends APUChannel { 
-    static int[] stepSequence = {
+    private static final int[] stepSequence = {
         0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
     };
     
-    private int cycles;
     private int output;
     private int step;
-    private boolean active, enabled;
+    private int counter = 0;
+    private int counterReload;
+    private boolean counterHalt;
+    private boolean halt;
     
     public TriangleChannel(nesimulare.core.Region.System system) {
         super(system);
     }
     
     @Override
+    public void initialize() {
+        super.initialize();
+        
+        hardReset();
+    }
+    
+    @Override
     public void hardReset() {
         super.hardReset();
         
-        cycles = 1;
+        counter = 0;
+        counterReload = 0;
         output = 0;
         step = 0;
-        active = enabled = false;
+        counterHalt = false;
+        halt = false;
     }
     
     public void write(final int register, final int data) {
@@ -63,8 +74,8 @@ public class TriangleChannel extends APUChannel {
              * linear counter load (R) 
              */
             case 0:
-                lenctrHalt = lenctrHaltRequest = lenctrLoop = Tools.getbit(data, 7);
-                lenctrReload = data & 0x7F;
+                counterHalt = lenctrHaltRequest = Tools.getbit(data, 7);
+                counterReload = data & 0x7F;
                 break;
               
             /**
@@ -81,78 +92,42 @@ public class TriangleChannel extends APUChannel {
              * Length counter load (L), timer high (T)
              */    
             case 3:
-                if (enabled) {
-                    lenctr = lenctrTable[(data >> 3) & 0x1F];
-                }
+                lenctrReload = lenctrTable[data >> 3];
+                lenctrReloadRequest = true;
+                halt = true;
                 
                 frequency = (frequency & 0xFF) | ((data & 7) << 8);
                 updateFrequency();
-                lenctrHalt = true;
-                lenctrLoop = true;
-                break;
-            
-            case 4:
-                enabled = (data != 0);
-                
-                if (!enabled) {
-                    lenctr = 0;
-                }
                 break;
                 
             default:
                 break;
         }
-        
-        checkActive();
     }
     
     @Override
     public void cycle() {
-        if (--cycles == 0) {
-            cycles = frequency;
-            
-            if (active) {
-                step = (step + 1) & 0x1F;
-                
-                if (frequency < 4) {
-                    output = 0;
-                } else {
-                    output = stepSequence[step];
-                }
-            }
-        }
-    }
-    
-    private void checkActive() {
-        active = (lenctr > 0 && lenctr > 0);
-        
-        if (frequency < 4) {
-            output = 0;
-        } else {
+        if (lenctr > 0 && counter > 0 && frequency < 4) {
+            step++;
+            step &= 0x1F;
             output = stepSequence[step];
         }
     }
     
     public void quarterFrame() {
-        if (lenctrHalt) {
-            lenctr = lenctrReload;
-        } else if (lenctr > 0) {
-            lenctr--;
+        if (halt) {
+            counter = counterReload;
+        } else if (counter != 0) {
+            counter--;
         }
         
-        if (!lenctrLoop) {
-            lenctrHalt = false;
-        }
-        
-        checkActive();
+        halt &= counterHalt;
     }
     
     public void halfFrame() {
-        if (lenctr > 0 && !lenctrLoop) {
-            lenctr--;
+        if (!lenctrHalt && lenctr > 0) {
+            lenctr = (lenctr - 1) & 0xFF;
         }
-        
-        checkActive();
     }
     
     private void updateFrequency() {
@@ -166,6 +141,6 @@ public class TriangleChannel extends APUChannel {
     }
     
     public final int getOutput() {
-        return output;
+        return output & 0xFF;
     }
 }

@@ -35,42 +35,42 @@ public class PulseChannel extends APUChannel {
     /**
      * Duty cycle sequences
      */
-    static int[][] dutySequences = { 
+    static final int[][] dutySequences = { 
         new int[] { 0, 1, 0, 0, 0, 0, 0, 0 },       //12.5%
         new int[] { 0, 1, 1, 0, 0, 0, 0, 0 },       //25%
-        new int[] { 0, 1, 1, 0, 0, 0, 0, 0 },       //50%
+        new int[] { 0, 1, 1, 1, 1, 0, 0, 0 },       //50%
         new int[] { 1, 0, 0, 1, 1, 1, 1, 1 }        //25% negated
     };
     
-    private int cycles;
     private int output;
     private int volume;
     private int dutyLength, dutyCycle;
     private int envelopeCount, envelopeTimer, envelopeSpeed;
     private int sweepCount, sweepShift, sweepDividerPeriod;
-    private boolean enabled;
-    private boolean validFreq;
     private boolean envelopeEnabled, envelopeLoop, envelopeReload;
-    private boolean sweepEnabled, sweepWritten, sweepNegateFlag;
+    private boolean sweepEnabled, sweepReload, sweepNegateFlag;
     
     public PulseChannel(nesimulare.core.Region.System system) {
         super(system);
     }
     
     @Override
+    public void initialize() {
+        super.initialize();
+        hardReset();
+    }
+    
+    @Override
     public void hardReset() {
         super.hardReset();
         
-        cycles = 1;
         output = 0;
         volume = 0;
         envelopeCount = envelopeTimer = envelopeSpeed = 0;
         dutyLength = dutyCycle = 0;
         sweepCount = sweepShift = sweepDividerPeriod = 0;
-        validFreq = false;
-        enabled = false;
         envelopeEnabled = envelopeLoop = envelopeReload = false;
-        sweepEnabled = sweepWritten = sweepNegateFlag = false;
+        sweepEnabled = sweepReload = sweepNegateFlag = false;
     }
     
     public void write(final int register, final int data) {
@@ -98,7 +98,7 @@ public class PulseChannel extends APUChannel {
                 sweepDividerPeriod = (data >> 4) & 7;
                 sweepNegateFlag = Tools.getbit(data, 3);
                 sweepShift = data & 7;
-                sweepWritten = true;
+                sweepReload = true;
                 break;
               
             /**
@@ -115,54 +115,35 @@ public class PulseChannel extends APUChannel {
              * Length counter load (L), timer high (T)
              */    
             case 3:
-                if (enabled) {
-                    lenctr = lenctrTable[(data >> 3) & 0x1F];
-                }
-                
-                frequency = (frequency & 0xFF) | ((data & 7) << 8);
-                dutyCycle = 0;
+                lenctrReload = lenctrTable[data >> 3];
+                lenctrReloadRequest = true;
                 envelopeReload = true;
-                updateFrequency();
-                break;
-            
-            case 4:
-                enabled = (data != 0);
                 
-                if (!enabled) {
-                    lenctr = 0;
-                }
+                frequency = (frequency & 0x00FF) | ((data & 7) << 8);
+                dutyCycle = 0;
+               
+                updateFrequency();
                 break;
                 
             default:
                 break;
         }
-        
-        checkActive();
     }
     
     @Override
     public void cycle() {
-        if (--cycles == 0) {
-            cycles = frequency << 1;
-            dutyCycle = (dutyCycle - 1) & 7;
+        dutyCycle = (dutyCycle + 1) & 7;
             
-            if (lenctr > 0 && validFreq) {
-                output = dutySequences[dutyLength][dutyCycle] * volume;
-            } 
-            
-            checkActive();
-        }
-    }
-    
-    private void checkActive() {
-        validFreq = (frequency >= 0x8) && ((sweepNegateFlag) || 
-                (((frequency + (frequency >> sweepShift)) & 0x800) == 0));
-        
-        if (lenctr > 0 && validFreq) {
-            output = dutySequences[dutyLength][dutyCycle] * volume;
+        if (lenctr > 0 && validFreq()) {
+            output = (dutySequences[dutyLength][dutyCycle] * volume) & 0xFF;
         } else {
             output = 0;
         }
+    }
+    
+    private boolean validFreq() {
+        return (frequency >= 0x8) && ((sweepNegateFlag) || 
+            (((frequency + (frequency >> sweepShift)) & 0x800) == 0));
     }
     
     /**
@@ -173,44 +154,42 @@ public class PulseChannel extends APUChannel {
             envelopeReload = false;
             envelopeCount = 0xF;
             envelopeTimer = envelopeSpeed;
-        } else if (envelopeTimer == 0) {
-            envelopeTimer = envelopeSpeed;
-            
-            if (envelopeCount != 0) {
-                envelopeCount--;
+        } else {
+            if (envelopeTimer != 0) {
+                envelopeTimer--;
             } else {
-                envelopeCount = envelopeLoop ? 0xF : 0x0;
+                envelopeTimer = envelopeSpeed;
+                
+                if (envelopeLoop || envelopeCount != 0) {
+                    envelopeCount = (envelopeCount - 1) & 0xF;
+                }
             }
         }
-        
-        volume = envelopeEnabled ? envelopeSpeed : envelopeCount;
-        checkActive();
     }
     
     /**
      * Clocks sweep.
      */
     public void halfFrame() {
+        if (!lenctrHalt && lenctr > 0) {
+            lenctr = (lenctr - 1) & 0xFF;
+        }
+        
         if (--sweepCount == 0) {
-            sweepCount = sweepDividerPeriod;
+            sweepCount = sweepDividerPeriod + 1;
             
-            if (sweepEnabled && (sweepShift > 0) && validFreq) {
+            if (sweepEnabled && (sweepShift > 0) && validFreq()) {
                 final int sweep = frequency >> sweepShift;
                 frequency += sweepNegateFlag ? ~sweep : sweep;
             }
         }
         
-        if (sweepWritten) {
-            sweepWritten = false;
-            sweepCount = sweepDividerPeriod;
+        if (sweepReload) {
+            sweepReload = false;
+            sweepCount = sweepDividerPeriod + 1;
         }
-        
-        if ((lenctr > 0) && envelopeLoop) {
-            lenctr--;
-        }
-        
+
         updateFrequency();
-        checkActive();
     }
     
     private void updateFrequency() {
@@ -218,8 +197,8 @@ public class PulseChannel extends APUChannel {
     }
     
     public final int getOutput() {
-        if (lenctr > 0 && validFreq) {
-            return output = dutySequences[dutyLength][dutyCycle] * volume;
+        if (lenctr > 0 && validFreq()) {
+            return output = (dutySequences[dutyLength][dutyCycle] * volume) & 0xFF;
         } else {
             return output = 0;
         }

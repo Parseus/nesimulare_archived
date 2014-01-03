@@ -38,6 +38,7 @@ public class ProcessorBase {
         this.system = system;
     }
     
+    public void initialize() { }
     public void softReset() { }
     public void hardReset() { }
     public void cycle() { }

@@ -33,31 +33,31 @@ import nesimulare.gui.Tools;
 public class NoiseChannel extends APUChannel {
     public int[] noiseFrequency;
     
-    private int cycles;
-    private int output;
     private int shiftRegister;
     private int volume;
     private int envelopeCount, envelopeTimer, envelopeSpeed;
     private boolean modeFlag;
-    private boolean enabled;
-    private boolean envelopeEnabled, envelopeReload;
+    private boolean envelopeEnabled, envelopeLoop, envelopeReload;
     
     public NoiseChannel(nesimulare.core.Region.System system) {
         super(system);
     }
     
     @Override
+    public void initialize() {
+        super.initialize();
+        hardReset();
+    }
+    
+    @Override
     public void hardReset() {
         super.hardReset();
-        
-        cycles = 1;
-        output = 0;
+
         shiftRegister = 1;
         volume = 0;
         envelopeCount = envelopeTimer = envelopeSpeed = 0;
         modeFlag = false;
-        enabled = false;
-        envelopeEnabled = envelopeReload = false;
+        envelopeEnabled = envelopeLoop = envelopeReload = false;
     }
     
     public void write(final int register, final int data) {
@@ -68,14 +68,11 @@ public class NoiseChannel extends APUChannel {
              * constant volume (C), volume/envelope (V)
              */
             case 0:
-                envelopeSpeed = data & 0xF;
+                lenctrHaltRequest = Tools.getbit(data, 5);
+                envelopeLoop = Tools.getbit(data, 5);
                 envelopeEnabled = Tools.getbit(data, 4);
-                lenctrLoop = Tools.getbit(data, 5);
+                envelopeSpeed = data & 0xF;
                 volume = envelopeEnabled ? envelopeSpeed : envelopeCount;
-                
-                if (lenctr > 0) {
-                    output = ((shiftRegister & 0x4000) != 0 ? -2 : 2) * volume;
-                }
                 break;
               
             /**
@@ -83,9 +80,8 @@ public class NoiseChannel extends APUChannel {
              * Loop noise (L), noise period (P)
              */
             case 2:
-                frequency = data & 0xF;
+                region.singleCycle = getCycles(noiseFrequency[data & 0xF]);
                 modeFlag = Tools.getbit(data, 7);
-                updateFrequency();
                 break;
             
             /**
@@ -93,19 +89,9 @@ public class NoiseChannel extends APUChannel {
              * Length counter load (L)
              */    
             case 3:
-                if (enabled) {
-                    lenctr = lenctrTable[(data >> 3) & 0x1F];
-                }
-                
+                lenctrReload = lenctrTable[data >> 3];
+                lenctrReloadRequest = true;
                 envelopeReload = true;
-                break;
-            
-            case 4:
-                enabled = (data != 0);
-                
-                if (!enabled) {
-                    lenctr = 0;
-                }
                 break;
                 
             default:
@@ -115,54 +101,45 @@ public class NoiseChannel extends APUChannel {
     
     @Override
     public void cycle() {
-        if (--cycles == 0) {
-            cycles = noiseFrequency[frequency];
-            
-            if (modeFlag) {
-                shiftRegister = (shiftRegister << 1) | (((shiftRegister >> 14) ^ (shiftRegister >> 8)) & 1);
-            } else {
-                shiftRegister = (shiftRegister << 1) | (((shiftRegister >> 14) ^ (shiftRegister >> 13)) & 1);
-            }
-            
-            if (lenctr > 0) {
-                output = ((shiftRegister & 0x4000) != 0 ? -2 : 2) * volume;
-            }
+        if (modeFlag) {
+            shiftRegister = (shiftRegister << 1) | (((shiftRegister >> 14) ^ (shiftRegister >> 8)) & 1);
+        } else {
+            shiftRegister = (shiftRegister << 1) | (((shiftRegister >> 14) ^ (shiftRegister >> 13)) & 1);
         }
     }
     
+    /**
+     * Clocks envelope.
+     */
     public void quarterFrame() {
         if (envelopeReload) {
             envelopeReload = false;
             envelopeCount = 0xF;
             envelopeTimer = envelopeSpeed;
-        } else if (envelopeTimer == 0) {
-            envelopeTimer = envelopeSpeed;
-            
-            if (envelopeCount != 0) {
-                envelopeCount--;
+        } else {
+            if (envelopeTimer != 0) {
+                envelopeTimer--;
             } else {
-                envelopeCount = lenctrLoop ? 0xF : 0x0;
+                envelopeTimer = envelopeSpeed;
+                
+                if (envelopeLoop || envelopeCount != 0) {
+                    envelopeCount = (envelopeCount - 1) & 0xF;
+                }
             }
-        }
-        
-        volume = envelopeEnabled ? envelopeSpeed : envelopeCount;
-        
-        if (lenctr > 0) {
-            output = ((shiftRegister & 0x4000) != 0 ? -2 : 2) * volume;
         }
     }
     
     public void halfFrame() {
-        if (lenctr > 0 && !lenctrLoop) {
-            lenctr--;
+        if (!lenctrHalt && lenctr > 0) {
+            lenctr = (lenctr - 1) & 0xFF;
         }  
     }
     
-    private void updateFrequency() {
-        region.singleCycle = getCycles(frequency + 1);
-    }
-    
     public final int getOutput() {
-        return output;
+        if (lenctr > 0 && !Tools.getbit(shiftRegister, 0)) {
+            return volume;
+        }
+        
+        return 0;
     }
 }

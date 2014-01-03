@@ -50,20 +50,20 @@ public class APU extends ProcessorBase {
     DMCChannel dmc;
     
     private final int[] noiseFreqNTSC = {
-        0x004, 0x008, 0x010, 0x020, 0x040, 0x060, 0x080, 0x0A0,
-	0x0CA, 0x0FE, 0x17C, 0x1FC, 0x2FA, 0x3F8, 0x7F2, 0xFE4
+        0x002, 0x004, 0x008, 0x010, 0x020, 0x030, 0x040, 0x050,
+	0x065, 0x07F, 0x0BE, 0x0FE, 0x17D, 0x1FC, 0x3F9, 0x7F2
     };   
     private final int[] noiseFreqPAL = {
-        0x004, 0x007, 0x00E, 0x01E, 0x03C, 0x058, 0x076, 0x094,
-	0x0BC, 0x0EC, 0x162, 0x1D8, 0x2C4, 0x3B0, 0x762, 0xEC2
+        0x002, 0x003, 0x007, 0x00F, 0x01E, 0x02C, 0x03B, 0x04A,
+	0x05E, 0x076, 0x0B1, 0x0EC, 0x162, 0x1D8, 0x3B1, 0x761
     };
     private final int[] dpcmFreqNTSC = {
-        0x1AC, 0x17C, 0x154, 0x140, 0x11E, 0x0FE, 0x0E2, 0x0D6,
-        0x0BE, 0x0A0, 0x08E, 0x080, 0x06A, 0x054, 0x048, 0x036  
+        0xD6, 0xBE, 0xAA, 0xA0, 0x8F, 0x7F, 0x71, 0x6B,
+        0x5F, 0x50, 0x47, 0x40, 0x35, 0x2A, 0x24, 0x1B  
     };
     private final int[] dpcmFreqPAL = {
-        0x18E, 0x162, 0x13C, 0x12A, 0x114, 0x0EC, 0x0D2, 0x0C6,
-        0x0B0, 0x094, 0x084, 0x076, 0x062, 0x04E, 0x042, 0x032  
+        0xC7, 0xB1, 0x9E, 0x95, 0x8A, 0x76, 0x69, 0x63,
+        0x58, 0x4A, 0x42, 0x3B, 0x31, 0x27, 0x21, 0x19,  
     };
     private final int[][] SequenceMode0 = { 
         new int[] { 7459, 7456, 7458, 7457, 1, 1, 7457 }, // NTSC
@@ -113,6 +113,7 @@ public class APU extends ProcessorBase {
         setRegion();
     }
     
+    @Override
     public final void initialize() {
         if (ai != null) {
             ai.destroy();
@@ -226,6 +227,7 @@ public class APU extends ProcessorBase {
         oddCycle = false;
         frameIRQEnabled = true;
         frameIRQFlag = false;
+        cpu.interrupt(CPU.InterruptTypes.APU, false);
         sequencerMode = false;
         currentSequencer = 0;
     }
@@ -236,34 +238,36 @@ public class APU extends ProcessorBase {
     }
     
     public int read(final int address) {
-        int result;
+        int result = 0;
         
         switch (address) {
             case 0x4015:
-                result = ((pulse1.lenctr > 0) ? 0x1 : 0x0) | 
-                        ((pulse2.lenctr > 0) ? 0x2 : 0x0) |
-                        ((triangle.lenctr > 0) ? 0x4 : 0x0) |
-                        ((noise.lenctr > 0) ? 0x8 : 0x0) |
-                        ((dmc.lenctr > 0) ? 0x10 : 0x0) |
+                result = (pulse1.getStatus() ? 0x1 : 0x0) | 
+                        (pulse2.getStatus() ? 0x2 : 0x0) |
+                        (triangle.getStatus() ? 0x4 : 0x0) |
+                        (noise.getStatus() ? 0x8 : 0x0) |
+                        (dmc.getStatus() ? 0x10 : 0x0) |
                         ((frameIRQFlag) ? 0x40 : 0x0) |
                         ((dmc.irqFlag) ? 0x80 : 0x0);
                 frameIRQFlag = false;
                 cpu.interrupt(CPU.InterruptTypes.APU, false);
+                break;
                 
-                return result;
             case 0x4016:
                 result = (CPU.lastRead & 0xC0);
                 result |= nes.controllers.read(address) & 0x19;
+                break;
                 
-                return result;
             case 0x4017:
                 result = (CPU.lastRead & 0xC0);
                 result |= nes.controllers.read(address) & 0x19;
+                break;
                 
-                return result;
             default:
-                return 0x40;        //Open bus
+                break;
         }
+        
+        return result;
     }
     
     public void write(final int address, final int data) {
@@ -284,11 +288,11 @@ public class APU extends ProcessorBase {
                 dmc.write(address & 3, data);
                 break;
             case 0x4015:
-                pulse1.write(4, data & 0x1);
-                pulse2.write(4, data & 0x2);
-                triangle.write(4, data & 0x4);
-                noise.write(4, data & 0x8);
-                dmc.write(4, data & 0x10);
+                pulse1.setStatus(Tools.getbit(data, 0));
+                pulse2.setStatus(Tools.getbit(data, 1));
+                triangle.setStatus(Tools.getbit(data, 2));
+                noise.setStatus(Tools.getbit(data, 3));
+                dmc.setStatus(Tools.getbit(data, 4));
                 break;
             case 0x4016:
                 nes.getJoypad1().output(Tools.getbit(data, 0));
@@ -301,9 +305,9 @@ public class APU extends ProcessorBase {
                 currentSequencer = 0;
                 
                 if (!sequencerMode) {
-                    apuCycles = SequenceMode0[system.serial][0] - 10;
+                    apuCycles = SequenceMode0[system.serial][0];
                 } else {
-                    apuCycles = SequenceMode1[system.serial][0] - 10;
+                    apuCycles = SequenceMode1[system.serial][0];
                 }
                 
                 if (!oddCycle) {
@@ -405,12 +409,14 @@ public class APU extends ProcessorBase {
                 switch (currentSequencer) {
                     case 0:
                         halfFrame();
+                        clockLength = true;
                         break;
                     case 1:
                         quarterFrame();
                         break;
                     case 2:
                         halfFrame();
+                        clockLength = true;
                         break;
                     case 3:
                         quarterFrame();

@@ -41,8 +41,8 @@ public class PPU extends ProcessorBase {
     CPU cpu;
     PPUMemory ppuram;
     
-    /* Lookup table filled with reversed CHR values */
-    static final int[] reverseCHRLookup =
+    /* Lookup table filled with CHR values reversed */
+    private static final int[] reverseCHRLookup =
         {
             0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0, 0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0,
             0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8, 0x18, 0x98, 0x58, 0xD8, 0x38, 0xB8, 0x78, 0xF8,
@@ -63,7 +63,7 @@ public class PPU extends ProcessorBase {
         };
     
     /* Palette indexes - currently used only for the stock NES/Famicom */
-    static final int[] paletteIndexes =
+    private final int[] paletteIndexes =
         {
             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
             0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
@@ -78,11 +78,12 @@ public class PPU extends ProcessorBase {
     private Fetch fetch = new Fetch();
     private Fetch spriteFetch = new Fetch();
     private Scroll scroll = new Scroll();
-    private Sprite[] buffer;
+    private Sprite[] buffer = new Sprite[8];
     private Unit background = new Unit(272);
     private Unit sprites = new Unit(256);
     private int spriteState = 0;
     private boolean oddFrame;
+    private boolean toggle;
     //Least significant bits previously written into a PPU register
     private int latch;
     private int chr;
@@ -123,6 +124,7 @@ public class PPU extends ProcessorBase {
         this.nes = nes;
     }
     
+    @Override
     public final void initialize() {
         hardReset();
     }
@@ -157,6 +159,7 @@ public class PPU extends ProcessorBase {
         nmiOutput = false;
         nmiRequest = false;
         suppressVBlank = false;
+        toggle = true;
         
         hclock = 0;
         vclock = 0;
@@ -200,7 +203,7 @@ public class PPU extends ProcessorBase {
     }
     
     private void fetchNametable_1() {
-        fetch.name = ppuram.read(fetch.address) & 0xFF;
+        fetch.nametable = ppuram.read(fetch.address);
     }
     
     private void fetchAttribute_0() {
@@ -209,43 +212,43 @@ public class PPU extends ProcessorBase {
     }
     
     private void fetchAttribute_1() {
-        fetch.attribute = (ppuram.read(fetch.address) & 0xFF) >> ((scroll.address >> 4 & 0x04) | (scroll.address & 0x02));
+        fetch.attribute = (ppuram.read(fetch.address)) >> ((scroll.address >> 4 & 0x04) | (scroll.address & 0x02));
     }
     
     private void fetchBit0_0() {
-        fetch.address = background.address | (fetch.name << 4) | (scroll.address >> 12 & 0x7);
+        fetch.address = background.address | (fetch.nametable << 4) | (scroll.address >> 12 & 0x7);
         nes.board.addressBus(fetch.address);
     }
     
     private void fetchBit0_1() {
-        fetch.bit0 = ppuram.read(fetch.address) & 0xFF;
+        fetch.bit0 = ppuram.read(fetch.address);
     }
     
     private void fetchBit1_0() {
-        fetch.address = background.address | (fetch.name << 4) | 8 | (scroll.address >> 12 & 0x7);
+        fetch.address = background.address | (fetch.nametable << 4) | 8 | (scroll.address >> 12 & 0x7);
         nes.board.addressBus(fetch.address);
     }
     
     private void fetchBit1_1() {
-        fetch.bit1 = ppuram.read(fetch.address) & 0xFF;
+        fetch.bit1 = ppuram.read(fetch.address);
     }
     
     private void spriteFetchBit0_0() {
         final int index = hclock >> 3 & 7;
-        final int comparator = (vclock - buffer[index].y) ^ (Tools.getbit(buffer[index].attribute, 7) ? 0xF : 0x0);
+        final int comparator = (vclock - buffer[index].y) ^ (Tools.getbit(buffer[index].attribute, 7) ? 0x0F : 0x00);
         
         if (sprites.rasters == 0x10) {
-            spriteFetch.address = (buffer[index].name << 0x0C & 0x1000) | (buffer[index].name << 0x04 & 0xFE0) |
-                    (comparator << 0x01 & 0x10) | (comparator & 0x7);
+            spriteFetch.address = (buffer[index].nametable << 0x0C & 0x1000) | (buffer[index].nametable << 0x04 & 0x0FE0) |
+                    (comparator << 0x01 & 0x0010) | (comparator & 0x7);
         } else {
-            spriteFetch.address = sprites.address | (buffer[index].name << 0x4) | (comparator & 0x7);
+            spriteFetch.address = sprites.address | (buffer[index].nametable << 0x4) | (comparator & 0x7);
         }
         
         nes.board.addressBus(fetch.address);
     }
     
     private void spriteFetchBit0_1() {
-        spriteFetch.bit0 = ppuram.read(spriteFetch.address) & 0xFF;
+        spriteFetch.bit0 = ppuram.read(spriteFetch.address);
         
         if (Tools.getbit(buffer[hclock >> 3 & 0x7].attribute, 6)) {
             spriteFetch.bit0 = reverseCHRLookup[spriteFetch.bit0];
@@ -259,7 +262,7 @@ public class PPU extends ProcessorBase {
     }
     
     private void spriteFetchBit1_1() {
-        spriteFetch.bit1 = ppuram.read(spriteFetch.address) & 0xFF;
+        spriteFetch.bit1 = ppuram.read(spriteFetch.address);
         
         if (Tools.getbit(buffer[hclock >> 3 & 0x7].attribute, 6)) {
             spriteFetch.bit1 = reverseCHRLookup[spriteFetch.bit1];
@@ -295,7 +298,7 @@ public class PPU extends ProcessorBase {
                 }
                 
                 nmiRequest = false;
-                scroll.swap = true;
+                toggle = true;
                 
                 return latch = data;
             
@@ -309,10 +312,10 @@ public class PPU extends ProcessorBase {
                 
                 if ((scroll.address & 0x3F00) == 0x3F00) {
                     tmp = ppuram.read(scroll.address);
-                    chr = ppuram.read(scroll.address & 0x2FFF);
+                    chr = ppuram.read(scroll.address & 0x2FFF) & 0xFF;
                 } else {
                     tmp = chr;
-                    chr = ppuram.read(scroll.address);
+                    chr = ppuram.read(scroll.address) & 0xFF;
                 }
                 
                 scroll.address = (scroll.address + scroll.step) & 0x7FFF;
@@ -336,7 +339,7 @@ public class PPU extends ProcessorBase {
 
                 //PPUCTRL
                 case 0:
-                    scroll.temp        = (scroll.temp & 0x73FF) | ((data & 3) << 10);
+                    scroll.temp        = (scroll.temp & ~0x0C00) | (data << 10 & 0x0C00);
                     scroll.step        = Tools.getbit(data, 2) ? 0x20 : 0x1;
                     sprites.address    = Tools.getbit(data, 3) ? 0x1000 : 0x0000;
                     background.address = Tools.getbit(data, 4) ? 0x1000 : 0x0000;
@@ -383,27 +386,27 @@ public class PPU extends ProcessorBase {
 
                 //PPUSCROLL
                 case 5:
-                    if (scroll.swap) {
-                        scroll.temp = (scroll.temp & 0x73F0) | ((data & 0xF8) >> 3);
+                    if (toggle) {
+                        scroll.temp = (scroll.temp & ~0x001F) | (data >> 3 & 0x001F);
                         scroll.fine = (data & 0x7);
                     } else {
-                        scroll.temp = (scroll.temp & 0x0C1F) | ((data & 7) << 12) | ((data & 0xF8) << 2);
+                        scroll.temp = (scroll.temp & ~0x73E0) | (data << 2 & 0x03E0) | (data << 12 & 0x7000);
                     }
                     
-                    scroll.swap ^= true;
+                    toggle ^= true;
                     break;
 
                 //PPUADDR
                 case 6:
-                    if (scroll.swap) {
-                        scroll.temp = (scroll.temp & 0x00FF) | ((data & 0x3F) << 8);
+                    if (toggle) {
+                        scroll.temp = (scroll.temp & ~0xFF00) | (data << 8 & 0x3F00);
                     } else {
-                        scroll.temp = (scroll.temp & 0x7F00) | data;
+                        scroll.temp = (scroll.temp & ~0x00FF) | (data & 0x00FF);
                         scroll.address = scroll.temp;
                         nes.board.addressBus(scroll.address);
                     }
                     
-                    scroll.swap ^= true;
+                    toggle ^= true;
                     break;
 
                 //PPUDATA
@@ -497,7 +500,7 @@ public class PPU extends ProcessorBase {
                             buffer[hclock >> 3].y = 0xFF;
                             break;
                         case 1:
-                            buffer[hclock >> 3].name = 0xFF;
+                            buffer[hclock >> 3].nametable = 0xFF;
                             break;
                         case 2:
                             buffer[hclock >> 3].attribute = 0xFF;
@@ -518,7 +521,7 @@ public class PPU extends ProcessorBase {
                 }
                 
                 oamCount++;
-                comparator = (vclock - (oamData & 0xFF)) & Integer.MAX_VALUE;
+                comparator = (vclock - oamData) & Integer.MAX_VALUE;
                 
                 if (comparator >= sprites.rasters) {
                     if (oamCount != 64) {
@@ -530,7 +533,7 @@ public class PPU extends ProcessorBase {
                 } else {
                     oamAddress = (oamAddress + 1) & 0xFF;
                     spriteState = 2;
-                    buffer[oamSlot].y = oamData & 0xFF;
+                    buffer[oamSlot].y = oamData;
                     buffer[oamSlot].zero = (oamCount == 1);
                 }
                 break;
@@ -538,21 +541,21 @@ public class PPU extends ProcessorBase {
             case 2:
                 oamAddress = (oamAddress + 1) & 0xFF;
                 spriteState = 3;
-                buffer[oamSlot].name = oamData & 0xFF;
+                buffer[oamSlot].nametable = oamData;    
                 break;
                 
             case 3:
                 oamAddress = (oamAddress + 1) & 0xFF;
                 spriteState = 4;
-                buffer[oamSlot].attribute = oamData & 0xFF;
+                buffer[oamSlot].attribute = oamData;
                 break;
                 
             case 4:
-                buffer[oamSlot].x = oamData & 0xFF;
-                oamSlot = (oamSlot + 1) & 0xFF;
+                buffer[oamSlot].x = oamData;
+                oamSlot++;
                 
                 if (oamCount != 64) {
-                    spriteState = oamSlot == 8 ? 5 : 1;
+                    spriteState = (oamSlot == 8) ? 5 : 1;
                     
                     if (oamCount != 2) {
                         oamAddress = (oamAddress + 1) & 0xFF;
@@ -599,10 +602,10 @@ public class PPU extends ProcessorBase {
                 
             case 8:
                 spriteState = 9;
-               oamAddress = (oamAddress + 1) & 0xFF;
+                oamAddress = (oamAddress + 1) & 0xFF;
                 
                 if ((oamAddress & 0x3) == 0x3) {
-                    oamAddress = (oamAddress + 1) & 0xFF;
+                    oamAddress++;
                 }
                 
                 oamAddress &= 0xFC;
@@ -791,7 +794,7 @@ public class PPU extends ProcessorBase {
             } else {
                 //Rendering is off, draw color at VRAM address if it's in range 0x3F00 - 0x3FFF
                 if (hclock < 255 && vclock < 240) {
-                    int pixel;
+                    int pixel = 0;
                     
                     if ((scroll.address & 0x3F00) == 0x3F00) {
                         pixel = colors[paletteIndexes[ppuram.read(scroll.address & 0x3FFF) & grayScale | emphasis]];
@@ -812,7 +815,7 @@ public class PPU extends ProcessorBase {
                 if (vclock == endNMI) {
                     oddSwap ^= true;
                     
-                    if (!oddSwap & background.enabled) {
+                    if (!oddSwap && background.enabled) {
                         hclock++;
                     }
                 }
@@ -861,12 +864,12 @@ public class PPU extends ProcessorBase {
     }
     
     public void oamTransfer() {
-        int data;
-        
         for (int i = 0; i < 256; i++) {
-            data = cpu.read(oamDMAAddress);
+            final int data = cpu.read(oamDMAAddress);
             cpu.write(0x2004, data);
-            oamDMAAddress = (++oamDMAAddress) & 0xFFFF;
+            
+            oamDMAAddress++;
+            oamDMAAddress &= 0xFFFF;
         }
     }
     
@@ -908,7 +911,7 @@ public class PPU extends ProcessorBase {
         }
         
         if ((pixel & 0x3) == 0) {
-                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis)]];
+            screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis)]];
         }
     }
     
