@@ -83,7 +83,7 @@ public final class PPUMemory extends Memory  {
     }
     
     private int readNametable(final int address) {
-        return nmt[nmtBank[(address >> 10) & 3]][address & 0x3FF];
+        return nmt[nmtBank[(address >> 10) & 3]][address & 0x03FF];
     }
     
     private int readPalette(final int address) {
@@ -91,7 +91,7 @@ public final class PPUMemory extends Memory  {
     }
     
     private void writeNametable(final int address, final int data) {
-        nmt[nmtBank[(address >> 10) & 3]][address & 0x3FF] = data;
+        nmt[nmtBank[(address >> 10) & 3]][address & 0x03FF] = data;
     }
     
     private void writePalette(final int address, final int data) {

@@ -139,6 +139,7 @@ public class CPU extends ProcessorBase implements Opcodes {
     /**
      * Initializes CPU.
      */
+    @Override
     public final void initialize() {
         setMemory(nes.cpuram);
         hardReset();
@@ -471,12 +472,12 @@ public class CPU extends ProcessorBase implements Opcodes {
                 effectiveAddress = state.args[0];
                 break;
             case ZPX_A:     // Zero Page,X
+                read(effectiveAddress);
                 effectiveAddress = zpxAddress(state.args[0]);
-                read(state.pc);
                 break;
             case ZPY_A:     // Zero Page,Y
+                read(effectiveAddress);
                 effectiveAddress = zpyAddress(state.args[0]);
-                read(state.pc);
                 break;
             default:
                 break;

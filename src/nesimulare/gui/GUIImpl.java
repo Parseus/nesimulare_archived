@@ -100,11 +100,9 @@ public class GUIImpl extends JFrame implements GUIInterface {
         final double fps = 1.0 / nes.frameLimiter.currentFrameTime;
         this.setTitle(String.format("NESimulare (%s) - %s, %2.2f fps",
             dateFormat.format(date), nes.getCurrentRomName(), fps));
-        
-        if (nes.framecount % 1 == 0) {
-            screen = renderer.render(frame);
-            render();
-        }
+            
+        screen = renderer.render(frame);
+        render();
     }
 
     @Override
@@ -445,10 +443,15 @@ public class GUIImpl extends JFrame implements GUIInterface {
             } else if (source instanceof JCheckBoxMenuItem) {
                 JCheckBoxMenuItem cb = (JCheckBoxMenuItem)source;
                 
-                if (cb.getText().equals("Enable logging")) {
-                    NES.LOGGING = (ie.getStateChange() == ItemEvent.SELECTED);
-                } else if (cb.getText().equals("Toggle frame limiter")) {
-                    nes.toggleFrameLimiter();
+                switch (cb.getText()) {
+                    case "Enable logging":
+                        NES.LOGGING = (ie.getStateChange() == ItemEvent.SELECTED);
+                        break;
+                    case "Toggle frame limiter":
+                        nes.toggleFrameLimiter();
+                        break;
+                    default:
+                        break;
                 }
             }
         }

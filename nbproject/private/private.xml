@@ -3,15 +3,20 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Board.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/Audio.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/NES.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/audio/DMCChannel.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/audio/NoiseChannel.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/ppu/PPUTypes.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/audio/APU.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/memory/PPUMemory.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/FrameLimiter.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/ppu/PPU.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/cpu/CPU.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/GUIImpl.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/cpu/CPU.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Board.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/NES.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/memory/PPUMemory.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/ppu/PPU.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/audio/PulseChannel.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/audio/APUChannel.java</file>
         </group>
     </open-files>
 </project-private>

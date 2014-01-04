@@ -318,7 +318,12 @@ public class PPU extends ProcessorBase {
                     chr = ppuram.read(scroll.address) & 0xFF;
                 }
                 
-                scroll.address = (scroll.address + scroll.step) & 0x7FFF;
+                if (isRendering()) {
+                    scroll.clockY();
+                } else {
+                    scroll.address = (scroll.address + scroll.step) & 0x7FFF;
+                }
+                
                 nes.board.addressBus(scroll.address);
                 
                 return latch = tmp;
@@ -331,7 +336,7 @@ public class PPU extends ProcessorBase {
     public final void write(final int address, final int data) {       
         //OAM DMA
         if (address == 0x4014) {
-            oamDMAAddress = data << 8;
+            oamDMAAddress = (data << 8);
             cpu.RDY(CPU.DMATypes.OAM);
         }
         else {
@@ -349,7 +354,7 @@ public class PPU extends ProcessorBase {
                     nmiOutput = Tools.getbit(data, 7);
 
                     if (vclock == startNMI && hclock < 3) {
-                        cpu.interrupt(CPU.InterruptTypes.PPU, nmiOutput & nmiRequest);
+                        cpu.interrupt(CPU.InterruptTypes.PPU, nmiOutput && nmiRequest);
                     }
 
                     if (!oldNMI && nmiOutput && nmiRequest) {
@@ -360,7 +365,7 @@ public class PPU extends ProcessorBase {
                 //PPUMASK
                 case 1:
                     grayScale = Tools.getbit(data, 0) ? 0x30 : 0x3F;
-                    emphasis = (data & 0xE0) << 1;
+                    emphasis = ((data & 0xE0) << 1) & 0xFF;
 
                     background.clipped = !Tools.getbit(data, 1);
                     sprites.clipped = !Tools.getbit(data, 2);
@@ -412,7 +417,13 @@ public class PPU extends ProcessorBase {
                 //PPUDATA
                 case 7:
                     ppuram.write(scroll.address, data);
-                    scroll.address = (scroll.address + scroll.step) & 0x7FFF;
+                    
+                    if (isRendering()) {
+                        scroll.clockY();
+                    } else {
+                        scroll.address = (scroll.address + scroll.step) & 0x7FFF;
+                    }
+                    
                     nes.board.addressBus(scroll.address);
                     break;
 
@@ -439,7 +450,7 @@ public class PPU extends ProcessorBase {
             return;
         }
         
-        int position = buffer[index].x & 0xFF;
+        int position = buffer[index].x;
         final int object0 = buffer[index].zero ? 0x4000 : 0x0000;
         final int infront = Tools.getbit(buffer[index].attribute, 5) ? 0x0000 : 0x8000;
         
@@ -533,7 +544,7 @@ public class PPU extends ProcessorBase {
                 } else {
                     oamAddress = (oamAddress + 1) & 0xFF;
                     spriteState = 2;
-                    buffer[oamSlot].y = oamData;
+                    buffer[oamSlot].y = oamData & 0xFF;
                     buffer[oamSlot].zero = (oamCount == 1);
                 }
                 break;
@@ -541,17 +552,17 @@ public class PPU extends ProcessorBase {
             case 2:
                 oamAddress = (oamAddress + 1) & 0xFF;
                 spriteState = 3;
-                buffer[oamSlot].nametable = oamData;    
+                buffer[oamSlot].nametable = oamData & 0xFF;    
                 break;
                 
             case 3:
                 oamAddress = (oamAddress + 1) & 0xFF;
                 spriteState = 4;
-                buffer[oamSlot].attribute = oamData;
+                buffer[oamSlot].attribute = oamData & 0xFF;
                 break;
                 
             case 4:
-                buffer[oamSlot].x = oamData;
+                buffer[oamSlot].x = oamData & 0xFF;
                 oamSlot++;
                 
                 if (oamCount != 64) {
@@ -794,12 +805,12 @@ public class PPU extends ProcessorBase {
             } else {
                 //Rendering is off, draw color at VRAM address if it's in range 0x3F00 - 0x3FFF
                 if (hclock < 255 && vclock < 240) {
-                    int pixel = 0;
+                    int pixel;
                     
                     if ((scroll.address & 0x3F00) == 0x3F00) {
-                        pixel = colors[paletteIndexes[ppuram.read(scroll.address & 0x3FFF) & grayScale | emphasis]];
+                        pixel = colors[paletteIndexes[ppuram.read(scroll.address & 0x3FFF) & (grayScale | emphasis)]];
                     } else {
-                        pixel = colors[paletteIndexes[ppuram.read(0x3F00) & grayScale | emphasis]];
+                        pixel = colors[paletteIndexes[ppuram.read(0x3F00) & (grayScale | emphasis)]];
                     }
                     
                     screen[vclock][hclock] = pixel;
@@ -848,8 +859,10 @@ public class PPU extends ProcessorBase {
             nes.board.scanlineTick();
             
             //Trigger NMI
-            if (vclock == startNMI && nmiOutput) {
-                cpu.interrupt(CPU.InterruptTypes.PPU, true);
+            if (vclock == startNMI) {
+                if (nmiOutput) {
+                    cpu.interrupt(CPU.InterruptTypes.PPU, true);
+                }
             }
             
             if (vclock == endFrame) {
@@ -911,7 +924,7 @@ public class PPU extends ProcessorBase {
         }
         
         if ((pixel & 0x3) == 0) {
-            screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis)]];
+            screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & grayScale | emphasis]];
         }
     }
     
