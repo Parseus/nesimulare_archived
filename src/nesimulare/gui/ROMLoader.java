@@ -26,6 +26,7 @@ package nesimulare.gui;
 
 import nesimulare.core.Region;
 import nesimulare.core.boards.*;
+import nesimulare.core.boards.SxROM.SOROM;
 import nesimulare.core.memory.PPUMemory;
 
 public class ROMLoader {
@@ -158,8 +159,10 @@ public class ROMLoader {
             case 0:
                 return new NROM(prg, chr, trainer, (chrsize == 0));
             case 1:
-                if (header[4] <= 16) {
-                    return new SNROM(prg, chr, trainer, (chrsize == 0));
+                if (header[4] < 16) {
+                    return new SxROM(prg, chr, trainer, (chrsize == 0));
+                } else if (header[4] >= 16) {
+                    return new SOROM(prg, chr, trainer, (chrsize == 0));
                 }
             case 2:
                 return new UxROM(prg, chr, trainer, (chrsize == 0));

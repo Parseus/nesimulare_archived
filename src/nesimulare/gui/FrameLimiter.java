@@ -35,7 +35,7 @@ import nesimulare.core.Region;
 public class FrameLimiter {
     NES nes;
     public double fps;
-    private double framePeriod = (1.0 / 60.0988);
+    private double framePeriod = (1.0 / 60.098813897440515532);
     public double currentFrameTime;
     public double lastFrameTime;
 
@@ -46,7 +46,7 @@ public class FrameLimiter {
     }
     
     public final void hardReset() {
-        fps = (nes.region == Region.NTSC) ? 60.0988 : 50.0070;
+        fps = (nes.region == Region.NTSC) ? 60.098813897440515532 : 50.006977968268290849;
         framePeriod = 1.0 / fps;
     }
 

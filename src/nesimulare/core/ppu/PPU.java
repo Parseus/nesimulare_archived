@@ -24,6 +24,7 @@
 
 package nesimulare.core.ppu;
 
+import javax.swing.Action;
 import nesimulare.core.NES;
 import nesimulare.core.ProcessorBase;
 import nesimulare.gui.Tools;
@@ -379,7 +380,7 @@ public class PPU extends ProcessorBase {
                     break;
 
                 //OAMDATA
-                case 4:            
+                case 4:  
                     if ((oamAddress & 0x03) == 0x02) {
                         oam[oamAddress++] = (data & 0xE3);
                     } else {
@@ -499,7 +500,7 @@ public class PPU extends ProcessorBase {
         
         sprites.pixels = new int[256];
     }
-    
+
     private void evaluateSprites() {   
         int comparator;
         
@@ -536,7 +537,7 @@ public class PPU extends ProcessorBase {
                 
                 if (comparator >= sprites.rasters) {
                     if (oamCount != 64) {
-                        oamAddress = (oamCount != 2 ? ((oamAddress + 4) & 0xFF) : 8);
+                        oamAddress = (oamCount != 2 ? (oamAddress + 4) : 8) & 0xFF;
                     } else {
                         oamAddress = 0;
                         spriteState = 9;
@@ -588,7 +589,7 @@ public class PPU extends ProcessorBase {
                 comparator = (vclock - oamData) & Integer.MAX_VALUE;
                 
                 if (comparator >= sprites.rasters) {
-                    oamAddress = (((oamAddress + 4) & 0xFC) + ((oamAddress + 1) & 0x3));
+                    oamAddress = (((oamAddress + 4) & 0xFC) + ((oamAddress + 1) & 0x3)) & 0xFF;
                     
                     if (oamAddress <= 5) {
                         spriteState = 9;
@@ -613,7 +614,7 @@ public class PPU extends ProcessorBase {
                 
             case 8:
                 spriteState = 9;
-                oamAddress = (oamAddress + 1) & 0xFF;
+                oamAddress++;
                 
                 if ((oamAddress & 0x3) == 0x3) {
                     oamAddress++;
@@ -808,9 +809,9 @@ public class PPU extends ProcessorBase {
                     int pixel;
                     
                     if ((scroll.address & 0x3F00) == 0x3F00) {
-                        pixel = colors[paletteIndexes[ppuram.read(scroll.address & 0x3FFF) & (grayScale | emphasis)]];
+                        pixel = colors[paletteIndexes[ppuram.read(scroll.address & 0x3FFF) & (grayScale | emphasis) & 0x7F]];
                     } else {
-                        pixel = colors[paletteIndexes[ppuram.read(0x3F00) & (grayScale | emphasis)]];
+                        pixel = colors[paletteIndexes[ppuram.read(0x3F00) & (grayScale | emphasis) & 0x7F]];
                     }
                     
                     screen[vclock][hclock] = pixel;
@@ -888,7 +889,7 @@ public class PPU extends ProcessorBase {
     
     private void renderPixel() {
         final int bckgr = ppuram.read(0x3F00);
-        screen[vclock][hclock] = colors[paletteIndexes[bckgr & (grayScale | emphasis)]];
+        screen[vclock][hclock] = colors[paletteIndexes[bckgr & (grayScale | emphasis) & 0x7F]];
         final int backgroundPixel = 0x3F00 | background.getPixel(hclock, scroll.fine);
         final int spritePixel = 0x3F10 | sprites.getPixel(hclock, 0);
         int pixel;
@@ -902,8 +903,8 @@ public class PPU extends ProcessorBase {
         if ((backgroundPixel & 0x3) == 0) {
             pixel = spritePixel;
             
-            if ((pixel & 0x3) == 0) {
-                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis)]];
+            if ((pixel & 0x3) != 0) {
+                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis) & 0x7F]];
             }
             
             return;
@@ -912,8 +913,8 @@ public class PPU extends ProcessorBase {
         if ((spritePixel & 0x3) == 0) {
             pixel = backgroundPixel;
             
-            if ((pixel & 0x3) == 0) {
-                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis)]];
+            if ((pixel & 0x3) != 0) {
+                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis) & 0x7F]];
             }
             
             return;
@@ -923,8 +924,8 @@ public class PPU extends ProcessorBase {
             sprite0hit = true;
         }
         
-        if ((pixel & 0x3) == 0) {
-            screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & grayScale | emphasis]];
+        if ((pixel & 0x3) != 0) {
+            screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis) & 0x7F]];
         }
     }
     

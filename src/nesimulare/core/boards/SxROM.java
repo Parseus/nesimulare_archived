@@ -31,13 +31,13 @@ import nesimulare.gui.Tools;
  *
  * @author Parseus
  */
-public class SNROM extends Board {
+public class SxROM extends Board {
     boolean sramEnable;
     int register[];
     int sramBank;
     int timer, shift, tmp;
     
-    public SNROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+    public SxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
@@ -110,7 +110,7 @@ public class SNROM extends Board {
         write(reg, data);
     }
     
-    private void write(int reg, int data) {
+    protected void write(int reg, int data) {
         switch (reg) {
             case 0:
                 switch (register[0] & 3) {
@@ -160,5 +160,87 @@ public class SNROM extends Board {
     @Override
     public void clockCycle() {
         timer++;
+    }
+    
+    public static class SOROM extends SxROM {
+        public SOROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+            super(prg, chr, trainer, haschrram);
+        }
+        
+        @Override
+        public void initialize() {
+            super.initialize();
+            
+            sram = new int[0x4000];
+        }
+        
+        @Override
+        protected void write(int reg, int data) {
+            switch (reg) {
+                case 0:
+                    switch (register[0] & 3) {
+                        case 0:
+                            nes.ppuram.setMirroring(Mirroring.ONESCREENA);
+                            break;
+                        case 1:
+                            nes.ppuram.setMirroring(Mirroring.ONESCREENB);
+                            break;
+                        case 2:
+                            nes.ppuram.setMirroring(Mirroring.VERTICAL);
+                            break;
+                        case 3:
+                            nes.ppuram.setMirroring(Mirroring.HORIZONTAL);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case 1:
+                    if (Tools.getbit(register[0], 5)) {
+                        super.switch4kCHRbank(register[1], 0);
+                        super.switch4kCHRbank(register[2], 0x1000);
+                    } else {
+                        super.switch8kCHRbank(register[1] >> 1);
+                    }
+                    
+                    sramBank = (register[1] & 0x10) << 9;
+                    break;
+                case 2:
+                    if (Tools.getbit(register[0], 5)) {
+                        super.switch4kCHRbank(register[1], 0);
+                        super.switch4kCHRbank(register[2], 0x1000);
+                        sramBank = (register[2] & 0x10) << 9;
+                    } else {
+                        super.switch8kCHRbank(register[1] >> 1);
+                    }
+                    break;
+                case 3:
+                    sramEnable = !Tools.getbit(register[3], 5);
+                
+                    if (Tools.getbit(register[0], 4)) {
+                        if (Tools.getbit(register[0], 3)) {
+                            super.switch16kPRGbank(register[3], 0x8000);
+                            super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
+                        } else {
+                            super.switch16kPRGbank(0, 0x8000);
+                            super.switch16kPRGbank(register[3], 0xC000);
+                        }
+                    } else {
+                        super.switch32kPRGbank(register[3] >> 1);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        @Override
+        public int[] getSRAM() {
+            final int[] newSRAM = new int[0x2000];
+            
+            System.arraycopy(sram, 0x2000, newSRAM, 0, 0x2000);
+            
+            return newSRAM.clone();
+        }
     }
 }

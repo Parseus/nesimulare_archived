@@ -100,9 +100,11 @@ public class GUIImpl extends JFrame implements GUIInterface {
         final double fps = 1.0 / nes.frameLimiter.currentFrameTime;
         this.setTitle(String.format("NESimulare (%s) - %s, %2.2f fps",
             dateFormat.format(date), nes.getCurrentRomName(), fps));
-            
-        screen = renderer.render(frame);
-        render();
+        
+        if (nes.framecount % 1 == 0) {
+            screen = renderer.render(frame);
+            render();
+        }
     }
 
     @Override

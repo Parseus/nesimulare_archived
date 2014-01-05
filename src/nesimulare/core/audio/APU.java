@@ -108,8 +108,6 @@ public class APU extends ProcessorBase {
         noise = new NoiseChannel(system);
         dmc = new DMCChannel(system, this);
         
-        mixer = new Mixer();
-        
         setRegion();
     }
     

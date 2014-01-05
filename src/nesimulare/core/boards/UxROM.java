@@ -29,10 +29,17 @@ package nesimulare.core.boards;
  * @author Parseus
  */
 public class UxROM extends Board { 
-    int mask = 0x7;
+    int mask;
     
     public UxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
+    }
+    
+    @Override
+    public void initialize() {
+        super.initialize();
+        
+        mask = (prg.length / 16384) - 1;
     }
     
     @Override

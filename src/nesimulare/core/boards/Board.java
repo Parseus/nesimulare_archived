@@ -44,7 +44,7 @@ public class Board {
     protected int prgmask;
     protected int chrmask;
     protected String[] filename;
-    private static final boolean LOGGING = true;
+    private static final boolean LOGGING = false;
     
     /**
      *
