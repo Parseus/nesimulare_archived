@@ -87,34 +87,34 @@ public class ROMLoader {
         savesram = Tools.getbit(header[6], 1);
         mirroring = Tools.getbit(header[6], 3) ? PPUMemory.Mirroring.FOURSCREEN : 
                 (Tools.getbit(header[6], 0) ? PPUMemory.Mirroring.VERTICAL : PPUMemory.Mirroring.HORIZONTAL);
-        if ((header[7] & 0x0C) == 0x08) {
-            //iNES 2.0            
-            mappertype |= (header[8] & 0x0F) << 8;
-            submapper = (header[8] & 0xF0) << 4;
-            prgsize |= (header[9] & 0x0F) << 8;
-            chrsize |= (header[9] & 0xF0) << 4;
-            prgram |= header[10];
-            chrram |= header[11];
-            tvmode |= header[12];
-            vssystem |= header[13];
-            
-            gui.nes.setRegion(tvmode == 0 ? Region.NTSC : Region.PAL);
-            
-            if (((prgram & 0xF) == 0xF) || ((prgram & 0xF0) == 0xF0)) {
-                //throw new Exception("Invalid PRG RAM size specified!");
-            }
-            if (((chrram & 0xF) == 0xF) || ((chrram & 0xF0) == 0xF0)) {
-                //throw new Exception("Invalid CHR RAM size specified!");
-            }
-            if (((chrram & 0xF0) != 0)) {
-               //throw new Exception("TODO: Implement battery-backed CHR RAM");
-            }
-        } else {
-//            for (int i = 8; i < 16; i++) {
-//                gui.messageBox("Byte " + i + " contains invalid data!");
-//                break;
+//        if ((header[7] & 0x0C) == 0x08) {
+//            //iNES 2.0            
+//            mappertype |= (header[8] & 0x0F) << 8;
+//            submapper = (header[8] & 0xF0) << 4;
+//            prgsize |= (header[9] & 0x0F) << 8;
+//            chrsize |= (header[9] & 0xF0) << 4;
+//            prgram |= header[10];
+//            chrram |= header[11];
+//            tvmode |= header[12];
+//            vssystem |= header[13];
+//            
+//            gui.nes.setRegion(tvmode == 0 ? Region.NTSC : Region.PAL);
+//            
+//            if (((prgram & 0xF) == 0xF) || ((prgram & 0xF0) == 0xF0)) {
+//                //throw new Exception("Invalid PRG RAM size specified!");
 //            }
-        } 
+//            if (((chrram & 0xF) == 0xF) || ((chrram & 0xF0) == 0xF0)) {
+//                //throw new Exception("Invalid CHR RAM size specified!");
+//            }
+//            if (((chrram & 0xF0) != 0)) {
+//               //throw new Exception("TODO: Implement battery-backed CHR RAM");
+//            }
+//        } else {
+////            for (int i = 8; i < 16; i++) {
+////                gui.messageBox("Byte " + i + " contains invalid data!");
+////                break;
+////            }
+//        } 
         
         prgoff = 0;
         chroff = prgsize;
@@ -157,19 +157,37 @@ public class ROMLoader {
 
         switch (mappertype) {
             case 0:
-                return new NROM(prg, chr, trainer, (chrsize == 0));
+                return new NROM(prg, chr, trainer, haschrram);
             case 1:
                 if (header[4] < 16) {
-                    return new SxROM(prg, chr, trainer, (chrsize == 0));
+                    return new SxROM(prg, chr, trainer, haschrram);
                 } else if (header[4] >= 16) {
-                    return new SOROM(prg, chr, trainer, (chrsize == 0));
+                    return new SOROM(prg, chr, trainer, haschrram);
                 }
             case 2:
-                return new UxROM(prg, chr, trainer, (chrsize == 0));
+                return new UxROM(prg, chr, trainer, haschrram);
             case 3:
-                return new CNROM(prg, chr, trainer, (chrsize == 0));
+                return new CNROM(prg, chr, trainer, haschrram);
             case 7:
-                return new AxROM(prg, chr, trainer, (chrsize == 0));
+                return new AxROM(prg, chr, trainer, haschrram);
+            case 9:
+                return new PxROM(prg, chr, trainer, haschrram);
+            case 10:
+                return new FxROM(prg, chr, trainer, haschrram);
+            case 11:
+                return new ColorDreams(prg, chr, trainer, haschrram);
+            case 13:
+                return new CPROM(prg, chr, trainer, haschrram);
+            case 34:
+                if (haschrram) {
+                    return new BxROM(prg, chr, trainer, haschrram);
+                } else {
+                    return new AVE_NINA_01(prg, chr, trainer, haschrram);
+                }
+            case 66:
+                return new GxROM(prg, chr, trainer, haschrram);
+            case 71:
+                return new Camerica(prg, chr, trainer, haschrram);
             default:
                 gui.messageBox("Couldn't load the ROM file!\nUnsupported mapper: " + mappertype);
                 return null;

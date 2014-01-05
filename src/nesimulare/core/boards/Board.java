@@ -286,7 +286,7 @@ public class Board {
     }
     
     public void writeCHR(final int address, final int data) {
-        if (address >= 0x2000 && haschrram) {
+        if (address <= 0x2000 && haschrram) {
             chr[decodeCHRAddress(address) & chrmask] = data;
         }
     }

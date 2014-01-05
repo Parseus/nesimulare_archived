@@ -24,33 +24,45 @@
 
 package nesimulare.core.boards;
 
+import nesimulare.core.memory.PPUMemory;
+import nesimulare.gui.Tools;
+
 /**
  *
  * @author Parseus
  */
-public class UxROM extends Board { 
-    int mask;
-    
-    public UxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+public class Camerica extends Board {
+    public Camerica(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
-    }
-    
-    @Override
-    public void initialize() {
-        super.initialize();
-        
-        mask = 0x7;
     }
     
     @Override
     public void hardReset() {
         super.hardReset();
-        super.switch16kPRGbank(0, 0x8000);
-        super.switch16kPRGbank(mask, 0xC000);
+        
+        super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
     }
     
     @Override
     public void writePRG(int address, int data) {
-        super.switch16kPRGbank(data & mask, 0x8000);
+        if ((address & 0xE000) == 0x6000) {
+            super.switch16kPRGbank(data & 0xF, 0x8000);
+        } else {
+            switch (address & 0xF000) {
+                case 0xF000: case 0xE000:
+                case 0xD000: case 0xC000:
+                    super.switch16kPRGbank(data & 0xF, 0x8000);
+                    break;
+                case 0x9000:
+                    if (Tools.getbit(data, 4)) {
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENB);
+                    } else {
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENA);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }
