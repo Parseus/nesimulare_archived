@@ -44,6 +44,6 @@ public class AxROM extends Board {
             nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENB);
         }
         
-        super.switch32kPRGbank(data & 0x7);
+        super.switch32kPRGbank(data & 0xF);
     }
 }

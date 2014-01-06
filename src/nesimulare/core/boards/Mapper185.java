@@ -22,22 +22,39 @@
  * THE SOFTWARE.
  */
 
-package nesimulare;
+package nesimulare.core.boards;
 
-import java.io.IOException;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-
-public class NESimulare {
-    static nesimulare.core.NES core;
+/**
+ *
+ * @author Parseus
+ */
+public class Mapper185 extends Board { 
+    private boolean chrDisable;
     
-    public static void main(String[] args) throws IOException {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            javax.swing.JOptionPane.showMessageDialog(null, e.getMessage());
-        }
+    public Mapper185(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
+    }
+    
+    @Override
+    public void hardReset() {
+        super.hardReset();
         
-        core = new nesimulare.core.NES();
+        chrDisable = false;
+    }
+    
+    @Override
+    public int readCHR(int address) {
+        if (chrDisable) {
+            return 0x12;
+        } else {
+            return super.readCHR(address);
+        }
+    }
+    
+    @Override
+    public void writePRG(int address, int data) {
+        super.switch8kCHRbank(data);
+        
+        chrDisable = ((data & 0xF) > 0) && (data != 0x13);
     }
 }

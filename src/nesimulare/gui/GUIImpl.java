@@ -101,10 +101,8 @@ public class GUIImpl extends JFrame implements GUIInterface {
         this.setTitle(String.format("NESimulare (%s) - %s, %2.2f fps",
             dateFormat.format(date), nes.getCurrentRomName(), fps));
         
-        if (nes.framecount % 1 == 0) {
-            screen = renderer.render(frame);
-            render();
-        }
+        screen = renderer.render(frame);
+        render();
     }
 
     @Override

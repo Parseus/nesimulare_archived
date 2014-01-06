@@ -26,7 +26,7 @@ package nesimulare.core.memory;
 
 import nesimulare.core.NES;
 
-public final class PPUMemory extends Memory  {
+public final class PPUMemory extends Memory {
     public NES nes;
     
     public enum Mirroring {
@@ -103,16 +103,16 @@ public final class PPUMemory extends Memory  {
     }
     
     public void setMirroring(final int data) {
-        nmtBank[0] = ((data >> 6 & 0xFF) & 3);
-        nmtBank[1] = ((data >> 4 & 0xFF) & 3);
-        nmtBank[2] = ((data >> 2 & 0xFF) & 3);
+        nmtBank[0] = (data >> 6 & 3);
+        nmtBank[1] = (data >> 4 & 3);
+        nmtBank[2] = (data >> 2 & 3);
         nmtBank[3] = (data & 3);
     }
     
     public void setNametable(final int data) {
-        nmtBank[3] = ((data >> 6 & 0xFF) & 3);
-        nmtBank[2] = ((data >> 4 & 0xFF) & 3);
-        nmtBank[1] = ((data >> 2 & 0xFF) & 3);
+        nmtBank[3] = (data >> 6 & 3);
+        nmtBank[2] = (data >> 4 & 3);
+        nmtBank[1] = (data >> 2 & 3);
         nmtBank[0] = (data & 3);
     }
     

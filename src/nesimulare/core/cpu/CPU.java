@@ -64,9 +64,6 @@ public class CPU extends ProcessorBase implements Opcodes {
     /* Logging (for debugging) */
     private static final boolean LOGGING = false;
     public FileWriter fw; //debug log writer
-    
-    /* The delay in microseconds between steps. */
-    private static final int CLOCK_IN_NS = 1000;
 
     /* DMA types */
     public enum DMATypes { DMA, OAM };
@@ -189,12 +186,12 @@ public class CPU extends ProcessorBase implements Opcodes {
                 }
                 
                 // Consecutive controller port reads from this are treated as one...
-                while (_dmcDMACycles-- > 0) {
+                while (--_dmcDMACycles > 0) {
                     dispatch();
                 }
             } else {
                 // ...but other addresses see multiple reads as expected
-                while (_dmcDMACycles-- > 0) {
+                while (--_dmcDMACycles > 0) {
                     read(address);
                 }
             }
@@ -481,21 +478,6 @@ public class CPU extends ProcessorBase implements Opcodes {
                 break;
             default:
                 break;
-        }
-        
-        // Logging (debugging only)
-        if (LOGGING) {
-            try {
-                //Note: This *might* trigger side effects if logging while executing
-                //code from I/O registers. So don't do that.
-                fw.write(getCPUState().toTraceEvent() + " CYC:" + nes.ppu.hclock + " SL:" + nes.ppu.vclock + "\n");
-                
-                if (state.stepCounter == 0) {
-                    fw.flush();
-                }
-            } catch (IOException ioe) {
-                nes.messageBox("Cannot write to debug log: " + ioe.getMessage());
-            }
         }
 
         // Execute
@@ -1277,8 +1259,6 @@ public class CPU extends ProcessorBase implements Opcodes {
             default:
                 break;
         }
-
-        delayLoop(state.ir);
         
         //Interrupts stuff
         if (interruptRequest) {
@@ -1793,21 +1773,6 @@ public class CPU extends ProcessorBase implements Opcodes {
      */
     final int zpyAddress(int zp) {
         return (zp + state.y) & 0xff;
-    }
-
-    /*
-     * Perform a ramy-loop for CLOCK_IN_NS nanoseconds
-     */
-    @SuppressWarnings("empty-statement")
-    private void delayLoop(int opcode) {
-        final int clockSteps = CPU.instructionClocks[opcode];
-        final long startTime = System.nanoTime();
-        final long stopTime = startTime + (CLOCK_IN_NS * clockSteps);
-        
-        // Memory loop
-        while (System.nanoTime() < stopTime) {
-            ;
-        }
     }
 
 

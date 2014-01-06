@@ -24,7 +24,6 @@
 
 package nesimulare.core.ppu;
 
-import javax.swing.Action;
 import nesimulare.core.NES;
 import nesimulare.core.ProcessorBase;
 import nesimulare.gui.Tools;
@@ -76,12 +75,12 @@ public class PPU extends ProcessorBase {
             0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, 0x7E, 0x7F,
         };
     
-    private Fetch fetch = new Fetch();
-    private Fetch spriteFetch = new Fetch();
-    private Scroll scroll = new Scroll();
-    private Sprite[] buffer = new Sprite[8];
-    private Unit background = new Unit(272);
-    private Unit sprites = new Unit(256);
+    private static Fetch fetch = new Fetch();
+    private static Fetch spriteFetch = new Fetch();
+    private static Scroll scroll = new Scroll();
+    private static Sprite[] buffer = new Sprite[8];
+    private static Unit background = new Unit(272);
+    private static Unit sprites = new Unit(256);
     private int spriteState = 0;
     private boolean oddFrame;
     private boolean toggle;

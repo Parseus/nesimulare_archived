@@ -140,8 +140,6 @@ public class NES extends Thread {
         
         while (true) {
             if (runEmulation) {  
-                cpu.cycle();
-                
                 if (LOGGING) {
                     try {
                         cpu.fw.write(cpu.getCPUState().toTraceEvent() + " CYC:" + ppu.hclock + " SL:" + ppu.vclock + "\n");
@@ -155,6 +153,8 @@ public class NES extends Thread {
                         System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
                     }
                 }
+                
+                cpu.cycle();
             } else { 
                 if (frameLimiter != null) {
                     frameLimiter.sleepFixed();

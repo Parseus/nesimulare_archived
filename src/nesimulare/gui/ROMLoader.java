@@ -168,6 +168,8 @@ public class ROMLoader {
                 return new UxROM(prg, chr, trainer, haschrram);
             case 3:
                 return new CNROM(prg, chr, trainer, haschrram);
+            case 4:
+                return new TxROM(prg, chr, trainer, haschrram);
             case 7:
                 return new AxROM(prg, chr, trainer, haschrram);
             case 9:
@@ -188,6 +190,8 @@ public class ROMLoader {
                 return new GxROM(prg, chr, trainer, haschrram);
             case 71:
                 return new Camerica(prg, chr, trainer, haschrram);
+            case 185:
+                return new Mapper185(prg, chr, trainer, haschrram);
             default:
                 gui.messageBox("Couldn't load the ROM file!\nUnsupported mapper: " + mappertype);
                 return null;
