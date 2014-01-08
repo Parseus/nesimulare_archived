@@ -52,7 +52,7 @@ public class NES extends Thread {
     public Region.System region = Region.NTSC;
     public FrameLimiter frameLimiter = new FrameLimiter(this);
     public GUIImpl gui = new GUIImpl(this);
-    private ROMLoader loader;
+    public ROMLoader loader;
     
     public boolean enableFrameLimiter = true;
     public long framecount;

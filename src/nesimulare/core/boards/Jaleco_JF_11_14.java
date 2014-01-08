@@ -21,36 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package nesimulare.core.boards;
 
 /**
  *
  * @author Parseus
  */
-public class UxROM extends Board { 
-    int mask;
-    
-    public UxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+public class Jaleco_JF_11_14 extends Board {
+    public Jaleco_JF_11_14(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
     @Override
-    public void initialize() {
-        super.initialize();
-        
-        mask = 0x7;
-    }
-    
-    @Override
-    public void hardReset() {
-        super.hardReset();
-        super.switch16kPRGbank(0, 0x8000);
-        super.switch16kPRGbank((prg.length - 0x2000) >> 13, 0xC000);
-    }
-    
-    @Override
-    public void writePRG(int address, int data) {
-        super.switch16kPRGbank(data & mask, 0x8000);
+    public void writeSRAM(int address, int data) {
+        super.switch32kPRGbank((data >> 4) & 0x3);
+        super.switch8kCHRbank(data & 0xF);
     }
 }

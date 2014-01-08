@@ -54,8 +54,8 @@ public class Board {
      * @param haschrram
      */
     public Board(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
-        this.prg = prg;
-        this.chr = chr;
+        this.prg = prg.clone();
+        this.chr = chr.clone();
         this.trainer = trainer;
         this.haschrram = haschrram;
         
@@ -286,12 +286,12 @@ public class Board {
     }
     
     public void writeCHR(final int address, final int data) {
-        if (address <= 0x2000 && haschrram) {
+        if (haschrram) {
             chr[decodeCHRAddress(address) & chrmask] = data;
         }
     }
     
-    public void clockCycle() {
+    public void clockCPUCycle() {
         //Placeholder
     }
     

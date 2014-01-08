@@ -21,36 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package nesimulare.core.boards;
+
+import nesimulare.core.memory.PPUMemory;
+import nesimulare.gui.Tools;
 
 /**
  *
  * @author Parseus
  */
-public class UxROM extends Board { 
-    int mask;
-    
-    public UxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+public class MLT_Action52 extends Board {
+    public MLT_Action52(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
     @Override
-    public void initialize() {
-        super.initialize();
-        
-        mask = 0x7;
-    }
-    
-    @Override
-    public void hardReset() {
-        super.hardReset();
-        super.switch16kPRGbank(0, 0x8000);
-        super.switch16kPRGbank((prg.length - 0x2000) >> 13, 0xC000);
-    }
-    
-    @Override
     public void writePRG(int address, int data) {
-        super.switch16kPRGbank(data & mask, 0x8000);
+        super.switch8kCHRbank(((address & 0xF) << 2) | (data & 0x3));
+        
+        nes.ppuram.setMirroring(Tools.getbit(address, 13) ? PPUMemory.Mirroring.HORIZONTAL : PPUMemory.Mirroring.VERTICAL);
+        
+        final int bank = (address >> 7 & 0x1F) + (address >> 7 & address >> 8 & 0x10);
+        
+        if (Tools.getbit(data, 5)) {
+            super.switch16kPRGbank((bank << 2) | (address >> 5 & 0x2), 0x8000);
+            super.switch16kPRGbank((bank << 2) | (address >> 5 & 0x2), 0xC000);
+        } else {
+            super.switch32kPRGbank(bank);
+        }
     }
 }

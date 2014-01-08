@@ -158,7 +158,7 @@ public class SxROM extends Board {
     }
     
     @Override
-    public void clockCycle() {
+    public void clockCPUCycle() {
         timer++;
     }
     
