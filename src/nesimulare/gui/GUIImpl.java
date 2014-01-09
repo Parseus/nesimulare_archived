@@ -52,6 +52,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
     NES nes;
     Joypad joypad1, joypad2;
     private final Listener listener = new Listener();
+    private JMenuBar menus;
     final DateFormat dateFormat = new SimpleDateFormat("yyMMddHHmmss");
     final Date date = new Date();
     private Canvas canvas;
@@ -97,7 +98,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
     
     @Override
     public final synchronized void setFrame(int[][] frame) {
-        final double fps = 1.0 / nes.frameLimiter.currentFrameTime;
+        final double fps = nes.frameLimiter.currentFrameTime;
         this.setTitle(String.format("NESimulare (%s) - %s, %2.2f fps",
             dateFormat.format(date), nes.getCurrentRomName(), fps));
         
@@ -201,7 +202,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
     }
     
     public void buildMenus() {
-        JMenuBar menus = new JMenuBar();
+        menus = new JMenuBar();
         JMenu file = new JMenu("File");
         JMenuItem item;
         file.add(item = new JMenuItem("Open ROM"));
@@ -329,7 +330,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
             this.setUndecorated(false);
             this.setVisible(true);
             inFullScreen = false;
-            buildMenus();
+            this.setJMenuBar(menus);
         } else {
             setJMenuBar(null);
             gd = getGraphicsConfiguration().getDevice();

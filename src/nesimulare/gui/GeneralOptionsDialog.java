@@ -227,7 +227,7 @@ public class GeneralOptionsDialog extends javax.swing.JDialog {
         prefs.putBoolean("soundEnable", jCheckSoundEnable.isSelected());
         prefs.putBoolean("maintainAspect", jCheckMaintainAspect.isSelected());
         screenScaling = (Integer) (jSpinnerScale.getModel().getValue());
-        prefs.putBoolean("smoothScaling", jCheckBoxSmoothVideo.isSelected());
+        prefs.putBoolean("bilinearFiltering", jCheckBoxSmoothVideo.isSelected());
         prefs.putInt("screenScaling", screenScaling);
         prefs.putInt("sampleRate", Integer.parseInt(jSampleRateBox.getSelectedItem().toString()));
         prefs.putInt("outputvol", volumeSlider.getValue());

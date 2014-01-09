@@ -39,6 +39,8 @@ public final class PPUMemory extends Memory {
         }   
     }
     
+    private boolean board = false;
+    private int mapper;
     private int[] paletteRAM;
     public int[][] nmt;
     public int[] nmtBank;
@@ -50,7 +52,11 @@ public final class PPUMemory extends Memory {
     
     @Override
     public void initialize() {
+        super.initialize();
+        
         hardReset();
+        mapper = nes.getLoader().mappertype;
+        board = (mapper == 5 || mapper == 19 || mapper == 68 || mapper == 90 || mapper == 95 || mapper == 118 || mapper == 207);
     }
     
     @Override
@@ -60,7 +66,7 @@ public final class PPUMemory extends Memory {
         if (addr >= 0x0000 && addr <= 0x1FFF) {
             return nes.board.readCHR(addr);
         } else if (addr >= 0x2000 && addr <= 0x3EFF) {
-            return readNametable(addr);
+            return readNametable(addr, board);
         } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
             return readPalette(addr);
         } else {
@@ -76,13 +82,17 @@ public final class PPUMemory extends Memory {
         if (addr >= 0x0000 && addr <= 0x1FFF) {
             nes.board.writeCHR(addr, data);
         } else if (addr >= 0x2000 && addr <= 0x3EFF) {
-            writeNametable(addr, data);
+            writeNametable(addr, data, board);
         } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
             writePalette(addr, data);
         } 
     }
     
-    private int readNametable(final int address) {
+    public int readNametable(final int address, final boolean board) {
+        if (board) {
+            return nes.board.readNametable(address);
+        }
+        
         return nmt[nmtBank[(address >> 10) & 3]][address & 0x03FF];
     }
     
@@ -90,8 +100,12 @@ public final class PPUMemory extends Memory {
         return paletteRAM[address & ((address & 3) == 0 ? 0x0C : 0x1F)];
     }
     
-    private void writeNametable(final int address, final int data) {
-        nmt[nmtBank[(address >> 10) & 3]][address & 0x03FF] = data;
+    public void writeNametable(final int address, final int data, final boolean board) {
+        if (board) {
+            nes.board.writeNametable(address, data);
+        } else {
+            nmt[nmtBank[(address >> 10) & 3]][address & 0x03FF] = data;
+        }
     }
     
     private void writePalette(final int address, final int data) {

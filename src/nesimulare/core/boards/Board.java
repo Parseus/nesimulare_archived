@@ -232,7 +232,7 @@ public class Board {
     }
     
     protected int getBusData(final int address, final int data) {
-        return data & nes.cpuram.read(address & 0x7FFF);
+        return data & readPRG(address);
     }
     
     public int readEXP(final int address) {
@@ -289,6 +289,14 @@ public class Board {
         if (haschrram) {
             chr[decodeCHRAddress(address) & chrmask] = data;
         }
+    }
+    
+    public int readNametable(int address) {
+        return 0;
+    }
+    
+    public void writeNametable(final int address, final int data) {
+        
     }
     
     public void clockCPUCycle() {

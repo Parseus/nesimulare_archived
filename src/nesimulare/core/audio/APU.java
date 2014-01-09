@@ -562,8 +562,9 @@ public class APU extends ProcessorBase {
             }
             public static short mixSamples(int pulse1, int pulse2, int triangle, int noise, int dmc, short exp)
             {
-                return Filter(
-                    (mix_table[pulse1][pulse2][triangle][noise][dmc] >> 1) + (exp >> 1));
+                return 0;
+                //return Filter(
+                  //  (mix_table[pulse1][pulse2][triangle][noise][dmc] >> 1) + (exp >> 1));
             }
     }
 } 

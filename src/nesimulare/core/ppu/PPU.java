@@ -872,8 +872,20 @@ public class PPU extends ProcessorBase {
         }
     }
     
-    private boolean isRendering() {
+    public boolean isRendering() {
         return (background.enabled || sprites.enabled);
+    }
+    
+    public boolean isBackgroundFetching() {
+        return (hclock < 256 || hclock >= 320);
+    }
+    
+    public boolean isOAMSize() {
+        return (sprites.rasters == 0x10);
+    }
+    
+    public boolean isRenderingScanline() {
+        return (vclock < 240);
     }
     
     public void oamTransfer() {

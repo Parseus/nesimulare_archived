@@ -170,6 +170,8 @@ public class ROMLoader {
                 return new CNROM(prg, chr, trainer, haschrram);
             case 4:
                 return new TxROM(prg, chr, trainer, haschrram);
+            case 5:
+                return new ExROM(prg, chr, trainer, haschrram);
             case 7:
                 return new AxROM(prg, chr, trainer, haschrram);
             case 9:
@@ -191,28 +193,42 @@ public class ROMLoader {
                 } else {
                     return new AVE_NINA_01(prg, chr, trainer, haschrram);
                 }
+            case 58:
+                return new Mapper058(prg, chr, trainer, haschrram);
             case 65:
                 return new IremH3001(prg, chr, trainer, haschrram);
             case 66:
                 return new GxROM(prg, chr, trainer, haschrram);
             case 71:
                 return new Camerica(prg, chr, trainer, haschrram);
+            case 72:
+                return new Jaleco_JF_17(prg, chr, trainer, haschrram);
             case 73:
                 return new VRC3(prg, chr, trainer, haschrram);
             case 75:
                 return new VRC1(prg, chr, trainer, haschrram);
             case 80:
                 return new Taito_X1_005(prg, chr, trainer, haschrram);
+            case 92:
+                return new Jaleco_JF_19(prg, chr, trainer, haschrram);
             case 94:
                 return new UN1ROM(prg, chr, trainer, haschrram);
             case 97:
                 return new Irem_TAM_S1(prg, chr, trainer, haschrram);
             case 140:
                 return new Jaleco_JF_11_14(prg, chr, trainer, haschrram);
+            case 174:
+                return new Mapper174(prg, chr, trainer, haschrram);
+            case 184:
+                return new Sunsoft1(prg, chr, trainer, haschrram);
             case 185:
                 return new Mapper185(prg, chr, trainer, haschrram);
+            case 213:
+                return new Mapper213(prg, chr, trainer, haschrram);
             case 228:
                 return new MLT_Action52(prg, chr, trainer, haschrram);
+            case 242:
+                return new Mapper242(prg, chr, trainer, haschrram);
             default:
                 gui.messageBox("Couldn't load the ROM file!\nUnsupported mapper: " + mappertype);
                 return null;

@@ -1,6 +1,7 @@
 AtLeastOneConstructor
 TooManyMethods
 ShortMethodName
+CollapsibleIfStatements
 DoNotUseThreads
 DefaultPackage
 SwitchDensity
@@ -11,10 +12,10 @@ MethodNamingConventions
 UseSingleton
 DataflowAnomalyAnalysis
 BooleanGetMethodName
-UnusedImports
-DoNotCallSystemExit
 AbstractNaming
-UnusedModifier
+DoNotCallSystemExit
+UnusedImports
 BeanMembersShouldSerialize
-AvoidDuplicateLiterals
+UnusedModifier
 OnlyOneReturn
+AvoidDuplicateLiterals

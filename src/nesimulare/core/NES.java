@@ -53,8 +53,7 @@ public class NES extends Thread {
     public FrameLimiter frameLimiter = new FrameLimiter(this);
     public GUIImpl gui = new GUIImpl(this);
     public ROMLoader loader;
-    
-    public boolean enableFrameLimiter = true;
+
     public long framecount;
     public boolean runEmulation = false;
     private boolean softResetRequest = false;
@@ -200,10 +199,10 @@ public class NES extends Thread {
         
         if (apu != null) {
             apu.ai.outputSample(apu.pullSample());
-            apu.ai.flushFrame(enableFrameLimiter);
+            apu.ai.flushFrame(frameLimiter.enabled);
         }
         
-        if (frameLimiter != null && enableFrameLimiter) {
+        if (frameLimiter != null && frameLimiter.enabled) {
             frameLimiter.sleep();
         }
         
@@ -286,6 +285,6 @@ public class NES extends Thread {
     }
     
     public void toggleFrameLimiter() {
-        enableFrameLimiter ^= true;
+        frameLimiter.enabled ^= true;
     }
 }

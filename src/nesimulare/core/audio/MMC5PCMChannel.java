@@ -21,60 +21,63 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package nesimulare.core.audio;
 
-package nesimulare.gui;
-
-import nesimulare.core.NES;
 import nesimulare.core.Region;
+import nesimulare.gui.Tools;
 
 /**
  *
  * @author Parseus
  */
-
-public class FrameLimiter extends Thread {
-    NES nes;
-    public boolean enabled;
-    public double framePeriod;
-    public double currentFrameTime;
-    public double lastFrameTime;
-
-    public FrameLimiter(NES nes) {
-        super();
-        this.nes = nes;
-        this.enabled = true;
+public class MMC5PCMChannel extends APUChannel {
+    private int output = 0;
+    private boolean outputEnabled = false;
+    
+    public MMC5PCMChannel(Region.System system) {
+        super(system);
+    }
+    
+    @Override
+    public void initialize() {
+        super.initialize();
         
         hardReset();
     }
     
-    public final void hardReset() {
-        final double fps = (nes.region == Region.NTSC) ? 60.098813897440515532 : 50.006977968268290849;
-        framePeriod = 1000 / fps;
-    }
-
-    public void sleep() {
-        //Frame Limiter
-        final double deltaFrameTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
-        currentFrameTime = framePeriod - deltaFrameTime;
+    @Override
+    public void hardReset() {
+        super.hardReset();
         
-        if (enabled) {
-            if (currentFrameTime > 0) {
-                try {
-                    Thread.sleep((long) currentFrameTime);
-                } catch (InterruptedException ie) {
-                    nes.messageBox(ie.getMessage());
-                }
-            }
+        output = 0;
+        outputEnabled = false;
+    }
+    
+    @Override
+    public void clockChannel(boolean clockLength) { }
+    
+    public void write(final int register, final int data) {
+        switch (register) {
+            case 0:
+                outputEnabled = Tools.getbit(data, 0);
+                break;
+            case 1:
+                output = data;
+                break;
+            case 2:
+            case 3:
+                //TODO: Implement this
+                break;
+            default:
+                break;
+        }
+    }
+    
+    public final int getOutput() {
+        if (outputEnabled) {
+            return output;
         }
         
-        lastFrameTime = (System.nanoTime() / 1000000.0);
-    }
-
-    public void sleepFixed() {
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException ie) {
-            nes.messageBox(ie.getMessage());
-        }
+        return 0;
     }
 }
