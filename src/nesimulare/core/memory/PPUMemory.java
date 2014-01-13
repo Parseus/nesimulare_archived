@@ -40,7 +40,6 @@ public final class PPUMemory extends Memory {
     }
     
     private boolean board = false;
-    private int mapper;
     private int[] paletteRAM;
     public int[][] nmt;
     public int[] nmtBank;
@@ -55,7 +54,7 @@ public final class PPUMemory extends Memory {
         super.initialize();
         
         hardReset();
-        mapper = nes.getLoader().mappertype;
+        final int mapper = nes.getLoader().mappertype;
         board = (mapper == 5 || mapper == 19 || mapper == 68 || mapper == 90 || mapper == 95 || mapper == 118 || mapper == 207);
     }
     

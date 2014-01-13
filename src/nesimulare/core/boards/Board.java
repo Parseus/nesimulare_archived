@@ -44,7 +44,7 @@ public class Board {
     protected int prgmask;
     protected int chrmask;
     protected String[] filename;
-    private static final boolean LOGGING = false;
+    private static final boolean LOGGING = true;
     
     /**
      *
@@ -236,7 +236,7 @@ public class Board {
     }
     
     public int readEXP(final int address) {
-        return address << 8;
+        return address >> 8;
     }
     
     
@@ -296,7 +296,7 @@ public class Board {
     }
     
     public void writeNametable(final int address, final int data) {
-        
+        //Placeholder
     }
     
     public void clockCPUCycle() {

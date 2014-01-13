@@ -32,10 +32,10 @@ import nesimulare.gui.Tools;
  * @author Parseus
  */
 public class SxROM extends Board {
-    boolean sramEnable;
-    int register[];
-    int sramBank;
-    int timer, shift, tmp;
+    protected boolean sramEnable;
+    protected int register[];
+    protected int sramBank;
+    protected int timer, shift, tmp;
     
     public SxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
@@ -61,7 +61,6 @@ public class SxROM extends Board {
         
         sramBank = 0;
         sramEnable = true;
-        timer = 0;
         shift = tmp = 0;
     }
     
@@ -96,7 +95,7 @@ public class SxROM extends Board {
         }
         
         if (Tools.getbit(data, 0)) {
-            tmp |= (1 << shift);
+            tmp |= ((1 << shift) & 0xFF);
         }
         
         if (++shift < 5) {
@@ -132,24 +131,26 @@ public class SxROM extends Board {
                 break;
             case 1:
             case 2:
-                if (Tools.getbit(register[0], 5)) {
-                    super.switch4kCHRbank(register[1], data);
+                if (Tools.getbit(register[0], 4)) {
+                    super.switch4kCHRbank(register[1], 0);
                     super.switch4kCHRbank(register[2], 0x1000);
                 } else {
                     super.switch8kCHRbank(register[1] >> 1);
                 }
                 break;
             case 3:
-                sramEnable = !Tools.getbit(register[3], 5);
+                sramEnable = !Tools.getbit(register[3], 4);
                 
-                if (Tools.getbit(register[0], 4)) {
-                    if (Tools.getbit(register[0], 3)) {
+                if (Tools.getbit(register[0], 3)) {
+                    if (Tools.getbit(register[0], 2)) {
                         super.switch16kPRGbank(register[3], 0x8000);
                         super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
                     } else {
                         super.switch16kPRGbank(0, 0x8000);
                         super.switch16kPRGbank(register[3], 0xC000);
                     }
+                } else {
+                    super.switch32kPRGbank(register[3] >> 1);
                 }
                 break;
             default:
@@ -196,7 +197,7 @@ public class SxROM extends Board {
                     }
                     break;
                 case 1:
-                    if (Tools.getbit(register[0], 5)) {
+                    if (Tools.getbit(register[0], 4)) {
                         super.switch4kCHRbank(register[1], 0);
                         super.switch4kCHRbank(register[2], 0x1000);
                     } else {
@@ -206,7 +207,7 @@ public class SxROM extends Board {
                     sramBank = (register[1] & 0x10) << 9;
                     break;
                 case 2:
-                    if (Tools.getbit(register[0], 5)) {
+                    if (Tools.getbit(register[0], 4)) {
                         super.switch4kCHRbank(register[1], 0);
                         super.switch4kCHRbank(register[2], 0x1000);
                         sramBank = (register[2] & 0x10) << 9;
@@ -215,10 +216,10 @@ public class SxROM extends Board {
                     }
                     break;
                 case 3:
-                    sramEnable = !Tools.getbit(register[3], 5);
+                    sramEnable = !Tools.getbit(register[3], 4);
                 
-                    if (Tools.getbit(register[0], 4)) {
-                        if (Tools.getbit(register[0], 3)) {
+                    if (Tools.getbit(register[0], 3)) {
+                        if (Tools.getbit(register[0], 2)) {
                             super.switch16kPRGbank(register[3], 0x8000);
                             super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
                         } else {
@@ -241,6 +242,11 @@ public class SxROM extends Board {
             System.arraycopy(sram, 0x2000, newSRAM, 0, 0x2000);
             
             return newSRAM.clone();
+        }
+        
+        @Override
+        public void setSRAM(int[] sram) {
+            System.arraycopy(sram, 0, this.sram, 0x2000, 0x2000);
         }
     }
 }

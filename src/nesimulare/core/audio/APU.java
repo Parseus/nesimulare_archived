@@ -262,6 +262,7 @@ public class APU extends ProcessorBase {
                 break;
                 
             default:
+                result = address >> 8;
                 break;
         }
         
@@ -293,8 +294,7 @@ public class APU extends ProcessorBase {
                 dmc.setStatus(Tools.getbit(data, 4));
                 break;
             case 0x4016:
-                nes.getJoypad1().output(Tools.getbit(data, 0));
-                nes.getJoypad2().output(Tools.getbit(data, 0));
+                nes.controllers.write(data);
                 break;
             case 0x4017:
                 sequencerMode = Tools.getbit(data, 7);

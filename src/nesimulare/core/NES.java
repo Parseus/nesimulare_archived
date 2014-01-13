@@ -63,7 +63,7 @@ public class NES extends Thread {
     public static final boolean INTERIM = true;
     
     public NES() {
-        super ("Emulation core");
+        //super ("Emulation core");
         
         try {
             java.awt.EventQueue.invokeAndWait(gui);
@@ -95,7 +95,7 @@ public class NES extends Thread {
     }
     
      public void run(final String romtoload) {
-        Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 1);
+        //Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 1);
         //set thread priority higher than the interface thread
         curRomPath = romtoload;
         loadROM(romtoload);
@@ -221,7 +221,7 @@ public class NES extends Thread {
         ppu.setupPalette(PaletteGenerator.generattePalette());
     }
     
-    public void loadROM(final String filename) {
+    public synchronized void loadROM(final String filename) {
         runEmulation = false;
         if (Tools.exists(filename) && (Tools.getExtension(filename).equalsIgnoreCase(".nes"))) {
             if (apu != null) {

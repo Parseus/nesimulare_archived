@@ -21,34 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-package nesimulare.core.input;
-
-import nesimulare.gui.GUIImpl;
+package nesimulare.core.boards;
 
 /**
  *
  * @author Parseus
  */
-public class Zapper {
-    private GUIImpl gui;
-    private boolean trigger;
-    
-    public void setGUI(GUIImpl gui) {
-        this.gui = gui;
+public class BANDAI_74_161_161_32 extends Board {
+    public BANDAI_74_161_161_32(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
     }
     
-    public boolean getTrigger() {
-        return trigger;
-    }
-    
-    public boolean getLightDetected() {
-        final boolean lightDetected = gui.detectZapperLight();
+    @Override
+    public void hardReset() {
+        super.hardReset();
         
-        return !lightDetected;
+        super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
     }
     
-    public void setTrigger(boolean trigger) {
-        this.trigger = trigger;
+    @Override
+    public void writePRG(int address, int data) {
+        super.switch16kPRGbank((data >> 4) & 0x7, 0x8000);
+        super.switch8kCHRbank(data & 0xF);
     }
 }

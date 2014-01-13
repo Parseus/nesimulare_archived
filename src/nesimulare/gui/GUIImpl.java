@@ -55,6 +55,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
     private JMenuBar menus;
     final DateFormat dateFormat = new SimpleDateFormat("yyMMddHHmmss");
     final Date date = new Date();
+    private Point mousePoint = new Point();
     private Canvas canvas;
     private BufferStrategy buffer;
     private Renderer renderer;
@@ -71,6 +72,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
         this.nes = nes;
         joypad1 = new Joypad(this, 1);
         joypad2 = new Joypad(this, 2);
+        nes.controllers.zapper.setGUI(this);
         nes.setControllers(joypad1, joypad2);
         joypad1.startEventQueue();
         joypad2.startEventQueue();
@@ -119,6 +121,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
         
         buildMenus();
         setRenderOptions();
+        addMouseListener(listener);
         
         this.getRootPane().registerKeyboardAction(listener, "Escape",
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
@@ -255,6 +258,14 @@ public class GUIImpl extends JFrame implements GUIInterface {
         nesmenu.add(item = new JCheckBoxMenuItem("Toggle frame limiter", true));
         item.addItemListener(listener);
         
+        nesmenu.addSeparator();
+        
+        nesmenu.add(item = new JMenuItem("ROM info..."));
+        item.addActionListener(listener);
+        
+        //nesmenu.add(item = new JCheckBoxMenuItem("Connect Zapper", false));
+        //item.addItemListener(listener);
+        
         menus.add(nesmenu);
         
         JMenu options = new JMenu("Options");
@@ -375,7 +386,19 @@ public class GUIImpl extends JFrame implements GUIInterface {
         }
     }
     
-    class Listener implements ActionListener, WindowListener, ItemListener {
+    public boolean detectZapperLight() {
+        final int x = (255 * (int)mousePoint.getX()) / screen.getWidth();
+        final int y = (239 * (int)mousePoint.getY()) / screen.getHeight();
+        
+        final int c = nes.ppu.getPixel(x / screenScaleFactor, y / screenScaleFactor);
+        final int r = (c >> 10) & 0xFF;
+        final int g = (c >> 8) & 0xFF;
+        final int b = c & 0xFF;
+        
+        return (r > 128 && g > 128 && b > 128);
+    }
+    
+    class Listener implements ActionListener, WindowListener, ItemListener, MouseListener {
 
         @Override
         public void actionPerformed(final ActionEvent arg0) {
@@ -416,6 +439,17 @@ public class GUIImpl extends JFrame implements GUIInterface {
                 case "General...":
                     showGeneralOptions();
                     break;
+                case "ROM info...":
+                    String info = null;
+                    
+                    if (nes.loader != null) {
+                         info = nes.loader.getrominfo();
+                    }
+                    
+                    if (info != null) {
+                        messageBox(info);
+                    }
+                    break;
                 default:
                     break;
             }
@@ -451,6 +485,8 @@ public class GUIImpl extends JFrame implements GUIInterface {
                     case "Toggle frame limiter":
                         nes.toggleFrameLimiter();
                         break;
+                    case "Connect Zapper":
+                        nes.controllers.zapperConnected = (ie.getStateChange() == ItemEvent.SELECTED);
                     default:
                         break;
                 }
@@ -492,6 +528,38 @@ public class GUIImpl extends JFrame implements GUIInterface {
 
         @Override
         public void windowDeactivated(WindowEvent e) {
+            //Nothing to see here, move along
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent me) {
+            //Nothing to see here, move along
+        }
+
+        @Override
+        public void mousePressed(MouseEvent me) {
+            if (nes.controllers.zapperConnected) {
+                nes.controllers.zapper.setTrigger(me.getButton() != MouseEvent.BUTTON1);
+            }
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent me) {
+            if (nes.controllers.zapperConnected) {
+                nes.controllers.zapper.setTrigger(me.getButton() == MouseEvent.BUTTON1);
+                
+                final PointerInfo info = MouseInfo.getPointerInfo();
+                mousePoint = info.getLocation();
+            }
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent me) {
+            //Nothing to see here, move along
+        }
+
+        @Override
+        public void mouseExited(MouseEvent me) {
             //Nothing to see here, move along
         }
     }

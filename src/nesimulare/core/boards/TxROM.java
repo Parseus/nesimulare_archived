@@ -33,22 +33,22 @@ import nesimulare.gui.Tools;
  * @author Parseus
  */
 public class TxROM extends Board{
-    private boolean chrMode = false;
-    private boolean prgMode = false;
-    private int register = 0;
-    private int chrRegister[] = new int[6];
-    private int prgRegister[] = new int[4];
+    protected boolean chrMode = false;
+    protected boolean prgMode = false;
+    protected int register = 0;
+    protected int chrRegister[] = new int[6];
+    protected int prgRegister[] = new int[4];
     
-    private boolean wramEnable = true;
-    private boolean wramWriteProtect = false;
+    protected boolean wramEnable = true;
+    protected boolean wramWriteProtect = false;
     
-    private int irqReload = 0xFF;
-    private int irqCounter = 0;
-    private boolean irqEnable = false;
-    private boolean irqClear = false;
-    private int oldA12;
-    private int newA12;
-    private int timer;
+    protected int irqReload = 0xFF;
+    protected int irqCounter = 0;
+    protected boolean irqEnable = false;
+    protected boolean irqClear = false;
+    protected int oldA12;
+    protected int newA12;
+    protected int timer;
     
     public TxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
@@ -112,8 +112,8 @@ public class TxROM extends Board{
                     chrRegister[register] = data;
                     setupCHR();
                 } else {
-                    prgRegister[register & 1] = data;
-                    setupCHR();
+                    prgRegister[register & 1] = data & 0x3F;
+                    setupPRG();
                 }
                 break;
             case 0xA000:
@@ -179,7 +179,7 @@ public class TxROM extends Board{
         timer++;
     }
     
-    private void setupPRG() {
+    protected void setupPRG() {
         if (prgMode) {
             super.switch8kPRGbank(prgRegister[2], 0x8000);
             super.switch8kPRGbank(prgRegister[1], 0xA000);
@@ -193,7 +193,7 @@ public class TxROM extends Board{
         }
     }
     
-    private void setupCHR() {
+    protected void setupCHR() {
         if (chrMode) {
             super.switch2kCHRbank(chrRegister[0] >> 1, 0x0000);
             super.switch2kCHRbank(chrRegister[1] >> 1, 0x0800);

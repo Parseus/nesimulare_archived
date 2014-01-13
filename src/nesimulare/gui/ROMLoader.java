@@ -187,6 +187,9 @@ public class ROMLoader {
             case 22:
             case 23:
                 return new VRC2(prg, chr, trainer, haschrram);
+            case 24:
+            case 26:
+                return new VRC6(prg, chr, trainer, haschrram);
             case 34:
                 if (chrsize <= 8192) {
                     return new BxROM(prg, chr, trainer, haschrram);
@@ -199,6 +202,14 @@ public class ROMLoader {
                 return new IremH3001(prg, chr, trainer, haschrram);
             case 66:
                 return new GxROM(prg, chr, trainer, haschrram);
+            case 67:
+                return new Sunsoft3(prg, chr, trainer, haschrram);
+            case 68:
+                return new Sunsoft4(prg, chr, trainer, haschrram);
+            case 69:
+                return new Sunsoft_FME7(prg, chr, trainer, haschrram);
+            case 70:
+                return new BANDAI_74_161_161_32(prg, chr, trainer, haschrram);
             case 71:
                 return new Camerica(prg, chr, trainer, haschrram);
             case 72:
@@ -215,8 +226,14 @@ public class ROMLoader {
                 return new UN1ROM(prg, chr, trainer, haschrram);
             case 97:
                 return new Irem_TAM_S1(prg, chr, trainer, haschrram);
+            case 118:
+                return new TxSROM(prg, chr, trainer, haschrram);
+            case 119:
+                return new TQROM(prg, chr, trainer, haschrram);
             case 140:
                 return new Jaleco_JF_11_14(prg, chr, trainer, haschrram);
+            case 152:
+                return new TAITO_74_161_161_32(prg, chr, trainer, haschrram);
             case 174:
                 return new Mapper174(prg, chr, trainer, haschrram);
             case 184:
@@ -229,9 +246,21 @@ public class ROMLoader {
                 return new MLT_Action52(prg, chr, trainer, haschrram);
             case 242:
                 return new Mapper242(prg, chr, trainer, haschrram);
+            case 255:
+                return new Mapper255(prg, chr, trainer, haschrram);
             default:
                 gui.messageBox("Couldn't load the ROM file!\nUnsupported mapper: " + mappertype);
                 return null;
         }
+    }
+    
+    public String getrominfo() {
+        return ("ROM INFO: \n"
+                + "Filename:     " + name + "\n"
+                + "Mapper:       " + mappertype + (gui.nes.board != null ? (" (" + gui.nes.board.getClass().getSimpleName() + ")") : "") + "\n"
+                + "PRG-ROM Size:     " + prgsize / 1024 + " kB\n"
+                + "CHR-ROM Size:     " + (haschrram ? 0 : chrsize / 1024) + " kB\n"
+                + "Mirroring:    " + mirroring.toString() + "\n"
+                + "Battery Save: " + ((savesram) ? "Yes" : "No"));
     }
 }

@@ -36,7 +36,6 @@ import nesimulare.core.ppu.PPUTypes.*;
  * @author Parseus
  */
 public class PPU extends ProcessorBase {
-    
     NES nes;
     CPU cpu;
     PPUMemory ppuram;
@@ -244,7 +243,7 @@ public class PPU extends ProcessorBase {
             spriteFetch.address = sprites.address | (buffer[index].nametable << 0x4) | (comparator & 0x7);
         }
         
-        nes.board.addressBus(fetch.address);
+        nes.board.addressBus(spriteFetch.address);
     }
     
     private void spriteFetchBit0_1() {
@@ -258,7 +257,7 @@ public class PPU extends ProcessorBase {
     
     private void spriteFetchBit1_0() {
         spriteFetch.address = spriteFetch.address | 0x8;
-        nes.board.addressBus(fetch.address);
+        nes.board.addressBus(spriteFetch.address);
     }
     
     private void spriteFetchBit1_1() {
@@ -312,10 +311,10 @@ public class PPU extends ProcessorBase {
                 
                 if ((scroll.address & 0x3F00) == 0x3F00) {
                     tmp = ppuram.read(scroll.address);
-                    chr = ppuram.read(scroll.address & 0x2FFF) & 0xFF;
+                    chr = ppuram.read(scroll.address & 0x2FFF);
                 } else {
                     tmp = chr;
-                    chr = ppuram.read(scroll.address) & 0xFF;
+                    chr = ppuram.read(scroll.address);
                 }
                 
                 if (isRendering()) {
@@ -888,6 +887,10 @@ public class PPU extends ProcessorBase {
         return (vclock < 240);
     }
     
+    public final int getPixel(int x, int y) {
+        return screen[y][x];
+    }
+    
     public void oamTransfer() {
         for (int i = 0; i < 256; i++) {
             final int data = cpu.read(oamDMAAddress);
@@ -915,20 +918,16 @@ public class PPU extends ProcessorBase {
             pixel = spritePixel;
             
             if ((pixel & 0x3) != 0) {
-                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis) & 0x7F]];
+                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & grayScale | emphasis & 0x7F]];
             }
-            
-            return;
         }
         
         if ((spritePixel & 0x3) == 0) {
             pixel = backgroundPixel;
             
             if ((pixel & 0x3) != 0) {
-                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis) & 0x7F]];
+                screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & grayScale | emphasis & 0x7F]];
             }
-            
-            return;
         }
         
         if ((spritePixel & 0x4000) != 0 && hclock < 255) {
@@ -936,7 +935,7 @@ public class PPU extends ProcessorBase {
         }
         
         if ((pixel & 0x3) != 0) {
-            screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & (grayScale | emphasis) & 0x7F]];
+            screen[vclock][hclock] = colors[paletteIndexes[ppuram.read(pixel) & grayScale | emphasis & 0x7F]];
         }
     }
     

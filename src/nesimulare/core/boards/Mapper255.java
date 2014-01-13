@@ -21,34 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package nesimulare.core.boards;
 
-package nesimulare.core.input;
-
-import nesimulare.gui.GUIImpl;
+import nesimulare.core.memory.PPUMemory;
+import nesimulare.gui.Tools;
 
 /**
  *
  * @author Parseus
  */
-public class Zapper {
-    private GUIImpl gui;
-    private boolean trigger;
-    
-    public void setGUI(GUIImpl gui) {
-        this.gui = gui;
+public class Mapper255 extends Board {
+    public Mapper255(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
     }
     
-    public boolean getTrigger() {
-        return trigger;
-    }
-    
-    public boolean getLightDetected() {
-        final boolean lightDetected = gui.detectZapperLight();
+    @Override
+    public void writePRG(int address, int data) {
+        final int mode = (~address >> 12 & 1);
+        final int bank = (address >> 8 & 0x40) | (address >> 6 & 0x3F);
         
-        return !lightDetected;
-    }
-    
-    public void setTrigger(boolean trigger) {
-        this.trigger = trigger;
+        nes.ppuram.setMirroring(Tools.getbit(address, 13) ? PPUMemory.Mirroring.HORIZONTAL : PPUMemory.Mirroring.VERTICAL);
+        
+        super.switch16kPRGbank(bank & mode, 0x8000);
+        super.switch16kPRGbank(bank | mode, 0xC000);
+        super.switch8kCHRbank((address >> 8 & 0x40) | (address & 0x3F));
     }
 }

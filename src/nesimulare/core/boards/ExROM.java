@@ -117,6 +117,7 @@ public class ExROM extends Board {
         lastAccessedVRAM = 0;
     }
     
+    @Override
     public int readEXP(int address) {
         int tmp = 0;
         
@@ -139,6 +140,8 @@ public class ExROM extends Board {
         } else if (address >= 0x5C00 && address <= 0x5FFF) {
             if (exramMode >= 2) {
                 return nes.ppuram.nmt[2][address & 0x3FF];
+            } else {
+                return address >> 8;
             }
         }
         
@@ -188,7 +191,7 @@ public class ExROM extends Board {
                 break;
                 
             case 0x5113:
-                sramPage = (data & 0x7) << 13;
+                sramPage = (data & 0x7);
                 break;
             case 0x5114:
                 if (prgSelectMode == 3) {
@@ -294,6 +297,42 @@ public class ExROM extends Board {
                 }
                 break;
                 
+            case 0x5128:
+                if (chrSelectMode == 3) {
+                    switch1kBGCHRbank(data, 0x0000);
+                    switch1kBGCHRbank(data, 0x1000);
+                }
+                break;
+            case 0x5129:
+                if (chrSelectMode == 2) {
+                    switch2kBGCHRbank(data, 0x0000);
+                    switch2kBGCHRbank(data, 0x1000);
+                } else if (chrSelectMode == 3) {
+                    switch1kBGCHRbank(data, 0x0400);
+                    switch1kBGCHRbank(data, 0x1400);
+                }
+                break;
+            case 0x512A:
+                if (chrSelectMode == 3) {
+                    switch1kBGCHRbank(data, 0x0800);
+                    switch1kBGCHRbank(data, 0x1800);
+                }
+                break;
+            case 0x512B:
+                if (chrSelectMode == 0) {
+                    switch8kBGCHRbank(data);
+                } else if (chrSelectMode == 1) {
+                    switch4kBGCHRbank(data, 0x0000);
+                    switch4kBGCHRbank(data, 0x1000);
+                } else if (chrSelectMode == 2) {
+                    switch2kBGCHRbank(data, 0x0800);
+                    switch2kBGCHRbank(data, 0x1800);
+                } else if (chrSelectMode == 3) {
+                    switch1kBGCHRbank(data, 0x0C00);
+                    switch1kBGCHRbank(data, 0x1C00);
+                }
+                break;
+                
             case 0x5200:
                 splitControl = data;
                 break;
@@ -325,7 +364,7 @@ public class ExROM extends Board {
                     if (exramMode == 2) {
                         nes.ppuram.nmt[2][(address & 0x3FF)] = data;
                     } else if (exramMode != 3) {
-                        if (Tools.getbit(irqStatus, 6)) {
+                        if (nes.ppu.isRendering()) {
                             nes.ppuram.nmt[2][(address & 0x3FF)] = data;
                         } else {
                             nes.ppuram.nmt[2][(address & 0x3FF)] = 0;

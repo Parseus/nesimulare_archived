@@ -64,9 +64,6 @@ public class CPU extends ProcessorBase implements Opcodes {
     /* Logging (for debugging) */
     private static final boolean LOGGING = false;
     public FileWriter fw; //debug log writer
-    
-    /* The delay in microseconds between steps. */
-    private static final int CLOCK_IN_NS = 1000;
 
     /* DMA types */
     public enum DMATypes { DMA, OAM };
@@ -177,7 +174,7 @@ public class CPU extends ProcessorBase implements Opcodes {
      */
     private void checkDmcOamDma(int address) {
         if (dmcDMACycles > 0) {
-            int _dmcDMACycles = dmcDMACycles;
+            int _dmcDMACycles = dmcDMACycles - 1;
             dmcDMACycles = 0;
             
             if ((address == 0x4016) || (address == 0x4017)) {
@@ -203,7 +200,7 @@ public class CPU extends ProcessorBase implements Opcodes {
         }
         
         if (oamDMACycles > 0) {
-            int _oamDMACycles = oamDMACycles;
+            int _oamDMACycles = oamDMACycles - 1;
             oamDMACycles = 0;
             
             if ((address == 0x4016) || (address == 0x4017)) {
@@ -430,8 +427,8 @@ public class CPU extends ProcessorBase implements Opcodes {
                 read(state.pc);
                 break;
             case IND_A:     // Indirect (for buggy JMP)
-                effectiveAddress = address(state.args[0], state.args[1]);
                 checkInterrupts();
+                effectiveAddress = address(state.args[0], state.args[1]);
                 break;
             case INX_A:     // (Zero Page,X)
                 tmp = read(state.args[0]);
@@ -1277,8 +1274,6 @@ public class CPU extends ProcessorBase implements Opcodes {
             default:
                 break;
         }
-
-        //delayLoop(state.ir);
         
         //Interrupts stuff
         if (interruptRequest) {
@@ -1795,21 +1790,6 @@ public class CPU extends ProcessorBase implements Opcodes {
         return (zp + state.y) & 0xff;
     }
 
-    /*
-     * Perform a ramy-loop for CLOCK_IN_NS nanoseconds
-     */
-    @SuppressWarnings("empty-statement")
-    private void delayLoop(int opcode) {
-        final int clockSteps = CPU.instructionClocks[opcode];
-        final long startTime = System.nanoTime();
-        final long stopTime = startTime + (CLOCK_IN_NS * clockSteps);
-        
-        // Memory loop
-        while (System.nanoTime() < stopTime) {
-            ;
-        }
-    }
-
 
     /**
      * A compact, struct-like representation of CPU state.
@@ -1897,12 +1877,12 @@ public class CPU extends ProcessorBase implements Opcodes {
             final StringBuilder sb = new StringBuilder(getInstructionByteStatus());
             
             sb.append("  ");
-            sb.append(String.format("%-24s", opcode)).append(" ");
+            sb.append(String.format("%-31s", opcode)).append(" ");
             sb.append("A:").append(Tools.byteToHex(a)).append(" ");
             sb.append("X:").append(Tools.byteToHex(x)).append(" ");
             sb.append("Y:").append(Tools.byteToHex(y)).append(" ");
             sb.append("P:").append(Tools.byteToHex(getStatusFlag())).append(" ");
-            sb.append("S:").append(Tools.byteToHex(sp)).append(" ");
+            sb.append("SP:").append(Tools.byteToHex(sp)).append(" ");
             sb.append(getProcessorStatusString());
             
             return sb.toString();
