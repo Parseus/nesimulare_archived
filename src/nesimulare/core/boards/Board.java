@@ -44,7 +44,7 @@ public class Board {
     protected int prgmask;
     protected int chrmask;
     protected String[] filename;
-    private static final boolean LOGGING = true;
+    private static final boolean LOGGING = false;
     
     /**
      *
@@ -239,7 +239,6 @@ public class Board {
         return address >> 8;
     }
     
-    
     public int readPRG(final int address) {
         return prg[decodePRGAddress(address) & prgmask];
     }
@@ -311,7 +310,7 @@ public class Board {
         //Placeholder
     }
     
-    public void addressBus(final int address) {
+    public void updateAddressLines(final int address) {
         //Placeholder
     }
     

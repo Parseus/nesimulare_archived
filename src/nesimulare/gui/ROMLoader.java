@@ -24,6 +24,10 @@
 
 package nesimulare.gui;
 
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import nesimulare.core.Region;
 import nesimulare.core.boards.*;
 import nesimulare.core.boards.SxROM.SOROM;
@@ -49,11 +53,13 @@ public class ROMLoader {
     public boolean haschrram = false;
     private final int[] rom;
     private int[] header;
+    public String sha1;
 
     public ROMLoader(String filename, GUIImpl gui) {
         this.gui = gui;
         rom = Tools.readfromfile(filename);
         name = filename;
+        sha1 = calculateHash(rom);
     }
     
     private void readHeader(int len) {
@@ -124,6 +130,30 @@ public class ROMLoader {
         return savesram;
     }
     
+    public final String calculateHash(int[] rom) {
+        String hash = null;
+        
+        try {
+            final MessageDigest md = MessageDigest.getInstance("SHA1");
+            final ByteBuffer buffer = ByteBuffer.allocate(rom.length * 4);
+            final IntBuffer intBuffer = buffer.asIntBuffer();
+            intBuffer.put(rom);
+            final byte[] result = md.digest(buffer.array());
+            
+            final StringBuffer sb = new StringBuffer();
+            
+            for (int i = 0; i < result.length; i++) {
+                sb.append(String.format("%02X", 0xFF & result[i]));
+            }
+            
+            hash = sb.toString();
+        } catch (NoSuchAlgorithmException nsaex) {
+            gui.messageBox(nsaex.getMessage());
+        }
+        
+        return hash;
+    }
+    
     public Board loadROM() {
         parseInesHeader();
         
@@ -182,6 +212,8 @@ public class ROMLoader {
                 return new ColorDreams(prg, chr, trainer, haschrram);
             case 13:
                 return new CPROM(prg, chr, trainer, haschrram);
+            case 15:
+                return new Mapper015(prg, chr, trainer, haschrram);
             case 18:
                 return new JalecoSS88006(prg, chr, trainer, haschrram);
             case 22:
@@ -190,6 +222,11 @@ public class ROMLoader {
             case 24:
             case 26:
                 return new VRC6(prg, chr, trainer, haschrram);
+            case 32:
+                return new IremG101(prg, chr, trainer, haschrram);
+            case 33:
+            case 48:
+                return new Taito_TC0190FMC(prg, chr, trainer, haschrram);
             case 34:
                 if (chrsize <= 8192) {
                     return new BxROM(prg, chr, trainer, haschrram);
@@ -198,6 +235,8 @@ public class ROMLoader {
                 }
             case 58:
                 return new Mapper058(prg, chr, trainer, haschrram);
+            case 64:
+                return new Tengen_800032(prg, chr, trainer, haschrram);
             case 65:
                 return new IremH3001(prg, chr, trainer, haschrram);
             case 66:
@@ -220,10 +259,18 @@ public class ROMLoader {
                 return new VRC1(prg, chr, trainer, haschrram);
             case 80:
                 return new Taito_X1_005(prg, chr, trainer, haschrram);
+            case 82:
+                return new Taito_X1_017(prg, chr, trainer, haschrram);
+            case 86:
+                return new Jaleco_JF_13(prg, chr, trainer, haschrram);
+            case 87:
+                return new Jaleco_JF_0x_10(prg, chr, trainer, haschrram);
             case 92:
                 return new Jaleco_JF_19(prg, chr, trainer, haschrram);
             case 94:
                 return new UN1ROM(prg, chr, trainer, haschrram);
+            case 96:
+                return new BANDAI_74_161_02_74(prg, chr, trainer, haschrram);
             case 97:
                 return new Irem_TAM_S1(prg, chr, trainer, haschrram);
             case 118:
@@ -240,10 +287,26 @@ public class ROMLoader {
                 return new Sunsoft1(prg, chr, trainer, haschrram);
             case 185:
                 return new Mapper185(prg, chr, trainer, haschrram);
+            case 191:
+                return new Mapper191(prg, chr, trainer, haschrram);
+            case 201:
+                return new Mapper201(prg, chr, trainer, haschrram);
+            case 202:
+                return new Mapper202(prg, chr, trainer, haschrram);
+            case 203:
+                return new Mapper203(prg, chr, trainer, haschrram);
+            case 204:
+                return new Mapper204(prg, chr, trainer, haschrram);
+            case 205:
+                return new Mapper205(prg, chr, trainer, haschrram);
+            case 207:
+                return new Mapper207(prg, chr, trainer, haschrram);
             case 213:
                 return new Mapper213(prg, chr, trainer, haschrram);
             case 228:
                 return new MLT_Action52(prg, chr, trainer, haschrram);
+            case 232:
+                return new CamericaQuattro(prg, chr, trainer, haschrram);
             case 242:
                 return new Mapper242(prg, chr, trainer, haschrram);
             case 255:
@@ -261,6 +324,7 @@ public class ROMLoader {
                 + "PRG-ROM Size:     " + prgsize / 1024 + " kB\n"
                 + "CHR-ROM Size:     " + (haschrram ? 0 : chrsize / 1024) + " kB\n"
                 + "Mirroring:    " + mirroring.toString() + "\n"
-                + "Battery Save: " + ((savesram) ? "Yes" : "No"));
+                + "Battery Save: " + ((savesram) ? "Yes\n" : "No\n"))
+                + "SHA-1: " + sha1;
     }
 }

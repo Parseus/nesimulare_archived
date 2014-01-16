@@ -10,12 +10,13 @@ ShortVariable
 AvoidInstantiatingObjectsInLoops
 MethodNamingConventions
 UseSingleton
+ConfusingTernary
 DataflowAnomalyAnalysis
 BooleanGetMethodName
-AbstractNaming
-DoNotCallSystemExit
 UnusedImports
-BeanMembersShouldSerialize
+DoNotCallSystemExit
+AbstractNaming
 UnusedModifier
-OnlyOneReturn
+BeanMembersShouldSerialize
 AvoidDuplicateLiterals
+OnlyOneReturn

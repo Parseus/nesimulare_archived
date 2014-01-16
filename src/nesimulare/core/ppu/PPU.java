@@ -198,7 +198,7 @@ public class PPU extends ProcessorBase {
     
     private void fetchNametable_0() {
         fetch.address = 0x2000 | (scroll.address & 0xFFF);
-        nes.board.addressBus(fetch.address);
+        nes.board.updateAddressLines(fetch.address);
     }
     
     private void fetchNametable_1() {
@@ -207,7 +207,7 @@ public class PPU extends ProcessorBase {
     
     private void fetchAttribute_0() {
         fetch.address = 0x23C0 | (scroll.address & 0xC00) | (scroll.address >> 4 & 0x38) | (scroll.address >> 2 & 0x7);
-        nes.board.addressBus(fetch.address);
+        nes.board.updateAddressLines(fetch.address);
     }
     
     private void fetchAttribute_1() {
@@ -216,7 +216,7 @@ public class PPU extends ProcessorBase {
     
     private void fetchBit0_0() {
         fetch.address = background.address | (fetch.nametable << 4) | (scroll.address >> 12 & 0x7);
-        nes.board.addressBus(fetch.address);
+        nes.board.updateAddressLines(fetch.address);
     }
     
     private void fetchBit0_1() {
@@ -225,7 +225,7 @@ public class PPU extends ProcessorBase {
     
     private void fetchBit1_0() {
         fetch.address = background.address | (fetch.nametable << 4) | 8 | (scroll.address >> 12 & 0x7);
-        nes.board.addressBus(fetch.address);
+        nes.board.updateAddressLines(fetch.address);
     }
     
     private void fetchBit1_1() {
@@ -243,7 +243,7 @@ public class PPU extends ProcessorBase {
             spriteFetch.address = sprites.address | (buffer[index].nametable << 0x4) | (comparator & 0x7);
         }
         
-        nes.board.addressBus(spriteFetch.address);
+        nes.board.updateAddressLines(spriteFetch.address);
     }
     
     private void spriteFetchBit0_1() {
@@ -257,7 +257,7 @@ public class PPU extends ProcessorBase {
     
     private void spriteFetchBit1_0() {
         spriteFetch.address = spriteFetch.address | 0x8;
-        nes.board.addressBus(spriteFetch.address);
+        nes.board.updateAddressLines(spriteFetch.address);
     }
     
     private void spriteFetchBit1_1() {
@@ -323,7 +323,7 @@ public class PPU extends ProcessorBase {
                     scroll.address = (scroll.address + scroll.step) & 0x7FFF;
                 }
                 
-                nes.board.addressBus(scroll.address);
+                nes.board.updateAddressLines(scroll.address);
                 
                 return latch = tmp;
             
@@ -407,7 +407,7 @@ public class PPU extends ProcessorBase {
                     } else {
                         scroll.temp = (scroll.temp & ~0x00FF) | (data & 0x00FF);
                         scroll.address = scroll.temp;
-                        nes.board.addressBus(scroll.address);
+                        nes.board.updateAddressLines(scroll.address);
                     }
                     
                     toggle ^= true;
@@ -423,7 +423,7 @@ public class PPU extends ProcessorBase {
                         scroll.address = (scroll.address + scroll.step) & 0x7FFF;
                     }
                     
-                    nes.board.addressBus(scroll.address);
+                    nes.board.updateAddressLines(scroll.address);
                     break;
 
                 default:

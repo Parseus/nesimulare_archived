@@ -149,7 +149,7 @@ public class TxROM extends Board{
     }
     
     @Override
-    public void addressBus(final int address) {
+    public void updateAddressLines(final int address) {
         oldA12 = newA12;
         newA12 = address & 0x1000;
         

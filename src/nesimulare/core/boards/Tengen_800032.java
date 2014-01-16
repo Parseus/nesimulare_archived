@@ -1,0 +1,249 @@
+/*
+ * The MIT License
+ *
+ * Copyright 2013 Parseus.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package nesimulare.core.boards;
+
+import nesimulare.core.cpu.CPU;
+import nesimulare.core.memory.PPUMemory;
+import nesimulare.gui.Tools;
+
+/**
+ *
+ * @author Parseus
+ */
+public class Tengen_800032 extends Board{
+    protected boolean chrMode = false;
+    protected boolean chr1kMode = false;
+    protected boolean prgMode = false;
+    protected int register = 0;
+    protected int chrRegister[] = new int[8];
+    protected int prgRegister[] = new int[3];
+    
+    protected int irqReload = 0xFF;
+    protected int irqCounter = 0;
+    protected int irqPrescaler = 0;
+    protected boolean irqMode = false;
+    protected boolean irqEnabled = false;
+    protected boolean irqClear = false;
+    protected int oldA12;
+    protected int newA12;
+    protected int timer;
+    
+    public Tengen_800032(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
+    }
+    
+    @Override
+    public void hardReset() {
+        super.hardReset();
+        
+        chrMode = prgMode = false;
+        chr1kMode = false;
+        register = 0;
+        chrRegister = new int[8];
+        prgRegister = new int[3];
+        
+        for (int i = 0; i < 8; i++) {
+            chrRegister[i] = i;
+        }
+        
+        for (int i = 0; i < 3; i++) {
+            prgRegister[i] = i;
+        }
+
+        setupPRG();
+        super.switch8kPRGbank((prg.length - 0x2000) >> 13, 0xE000);
+        setupCHR();
+        
+        irqReload = 0xFF;
+        irqCounter = 0;
+        irqPrescaler = 0;
+        irqEnabled = false;
+        irqClear = false;
+        irqMode = false;
+        oldA12 = newA12 = 0;
+        timer = 0;
+    }
+    
+    @Override
+    public void writePRG(int address, int data) {
+        switch (address & 0xE001) {
+            case 0x8000:
+                chrMode = Tools.getbit(data, 7);
+                prgMode = Tools.getbit(data, 6);
+                chr1kMode = Tools.getbit(data, 5);
+                register = data & 0xF;
+                setupPRG();
+                setupCHR();
+                break;
+            case 0x8001:
+                switch (register) {
+                    case 0x0: case 0x1: case 0x2: case 0x3: case 0x4: case 0x5:
+                        chrRegister[register] = data;
+                        setupCHR();
+                        break;
+                    case 0x6:
+                        prgRegister[0] = data;
+                        setupPRG();
+                        break;
+                    case 0x7:
+                        prgRegister[1] = data;
+                        setupPRG();
+                        break;
+                    case 0x8:
+                        chrRegister[6] = data;
+                        setupCHR();
+                        break;
+                    case 0x9:
+                        chrRegister[7] = data;
+                        setupCHR();
+                        break;
+                    case 0xF:
+                        prgRegister[2] = data;
+                        setupPRG();
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case 0xA000:
+                if (Tools.getbit(data, 0)) {
+                    nes.ppuram.setMirroring(PPUMemory.Mirroring.HORIZONTAL);
+                } else {
+                    nes.ppuram.setMirroring(PPUMemory.Mirroring.VERTICAL);
+                }
+                break;
+            case 0xC000:
+                irqReload = data;
+                break;
+            case 0xC001:
+                irqMode = Tools.getbit(data, 0);
+                irqClear = true;
+                irqPrescaler = 0;
+                break;
+            case 0xE000:
+                irqEnabled = false;
+                nes.cpu.interrupt(CPU.InterruptTypes.BOARD, false);
+                break;
+            case 0xE001:
+                irqEnabled = true;
+                break;
+            default:
+                break;
+        }
+    }
+    
+    @Override
+    public void updateAddressLines(final int address) {
+        if (!irqMode) {
+            oldA12 = newA12;
+            newA12 = address & 0x1000;
+            
+            if (oldA12 < newA12) {
+                if (timer > 8) {
+                    clockIRQ();
+                }
+                
+                timer = 0;
+            }
+        }
+    }
+    
+    @Override
+    public void clockCPUCycle() {
+        if (irqMode) {
+            irqPrescaler++;
+            
+            if (irqPrescaler == 4) {
+                irqPrescaler = 0;
+                clockIRQ();
+            }
+        }
+    }
+    
+    @Override
+    public void clockPPUCycle() {
+        timer++;
+    }
+    
+    private void clockIRQ() {
+        if (irqClear) {
+            irqCounter = (irqReload + 1) & 0xFF;
+            irqClear = false;
+        } else {
+            if (irqCounter == 0) {
+                irqCounter = irqReload;
+            } else {
+                if (--irqCounter == 0 && irqEnabled) {
+                    nes.cpu.interrupt(CPU.InterruptTypes.BOARD, true);
+                }
+            }
+        }
+    }
+    
+    protected void setupPRG() {
+        if (prgMode) {
+            super.switch8kPRGbank(prgRegister[2], 0x8000);
+            super.switch8kPRGbank(prgRegister[0], 0xA000);
+            super.switch8kPRGbank(prgRegister[1], 0xC000);
+        } else {
+            super.switch8kPRGbank(prgRegister[0], 0x8000);
+            super.switch8kPRGbank(prgRegister[1], 0xA000);
+            super.switch8kPRGbank(prgRegister[2], 0xC000);
+        }
+    }
+    
+    protected void setupCHR() {
+        if (chrMode) {
+            super.switch1kCHRbank(chrRegister[2], 0x0000);
+            super.switch1kCHRbank(chrRegister[3], 0x0400);
+            super.switch1kCHRbank(chrRegister[4], 0x0800);
+            super.switch1kCHRbank(chrRegister[5], 0x0C00);
+            
+            if (chr1kMode) {
+                super.switch1kCHRbank(chrRegister[0], 0x1000);
+                super.switch1kCHRbank(chrRegister[6], 0x1400);
+                super.switch1kCHRbank(chrRegister[1], 0x1800);
+                super.switch1kCHRbank(chrRegister[7], 0x1C00);
+            } else {
+                super.switch2kCHRbank(chrRegister[0] >> 1, 0x1000);
+                super.switch2kCHRbank(chrRegister[1] >> 1, 0x1800);
+            }
+        } else {
+            super.switch1kCHRbank(chrRegister[2], 0x1000);
+            super.switch1kCHRbank(chrRegister[3], 0x1400);
+            super.switch1kCHRbank(chrRegister[4], 0x1800);
+            super.switch1kCHRbank(chrRegister[5], 0x1C00);
+            
+            if (chr1kMode) {
+                super.switch1kCHRbank(chrRegister[0], 0x0000);
+                super.switch1kCHRbank(chrRegister[6], 0x0400);
+                super.switch1kCHRbank(chrRegister[1], 0x0800);
+                super.switch1kCHRbank(chrRegister[7], 0x0C00);
+            } else {
+                super.switch2kCHRbank(chrRegister[0] >> 1, 0x0000);
+                super.switch2kCHRbank(chrRegister[1] >> 1, 0x0800);
+            }
+        }
+    }
+}
