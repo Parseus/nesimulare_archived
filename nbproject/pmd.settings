@@ -13,10 +13,11 @@ UseSingleton
 ConfusingTernary
 DataflowAnomalyAnalysis
 BooleanGetMethodName
-UnusedImports
-DoNotCallSystemExit
 AbstractNaming
-UnusedModifier
+DoNotCallSystemExit
+UnusedImports
 BeanMembersShouldSerialize
-AvoidDuplicateLiterals
+UnusedModifier
 OnlyOneReturn
+AvoidDuplicateLiterals
+AvoidUsingShortType

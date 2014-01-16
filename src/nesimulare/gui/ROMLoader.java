@@ -216,6 +216,8 @@ public class ROMLoader {
                 return new Mapper015(prg, chr, trainer, haschrram);
             case 18:
                 return new JalecoSS88006(prg, chr, trainer, haschrram);
+            case 19:
+                return new Namco163(prg, chr, trainer, haschrram);
             case 22:
             case 23:
                 return new VRC2(prg, chr, trainer, haschrram);
@@ -257,6 +259,8 @@ public class ROMLoader {
                 return new VRC3(prg, chr, trainer, haschrram);
             case 75:
                 return new VRC1(prg, chr, trainer, haschrram);
+            case 77:
+                return new IREM_74_161_161_21_138(prg, chr, trainer, haschrram);
             case 80:
                 return new Taito_X1_005(prg, chr, trainer, haschrram);
             case 82:
@@ -317,10 +321,27 @@ public class ROMLoader {
         }
     }
     
+    public String getBoardName() {
+        String boardname;
+        final StringBuilder sb = new StringBuilder();
+        
+        if (gui.nes.board != null) {
+            boardname = gui.nes.board.getClass().getSimpleName();
+            
+            if (boardname.startsWith("Mapper")) {
+                boardname = "";
+            }
+            
+            sb.append("".equals(boardname) ? "" : " (" + gui.nes.board.getClass().getSimpleName() + ")");
+        }
+        
+        return sb.toString();
+    }
+    
     public String getrominfo() {
-        return ("ROM INFO: \n"
+        return ("ROM info:\n"
                 + "Filename:     " + name + "\n"
-                + "Mapper:       " + mappertype + (gui.nes.board != null ? (" (" + gui.nes.board.getClass().getSimpleName() + ")") : "") + "\n"
+                + "Mapper:       " + mappertype + getBoardName() + "\n"
                 + "PRG-ROM Size:     " + prgsize / 1024 + " kB\n"
                 + "CHR-ROM Size:     " + (haschrram ? 0 : chrsize / 1024) + " kB\n"
                 + "Mirroring:    " + mirroring.toString() + "\n"
