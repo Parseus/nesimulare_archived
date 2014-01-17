@@ -50,9 +50,9 @@ public class CPUMemory extends Memory  {
             return wram[address];
         } else if (address < 0x2000) {
             return wram[address & 0x7FF];
-        } else if (address <= 0x3FFF) {
+        } else if (address < 0x4000) {
             return nes.ppu.read(address);
-        } else if (address >= 0x4000 && address <= 0x4018) {
+        } else if (address < 0x4020) {
             return nes.apu.read(address);
         } else if (address < 0x6000) {
             return nes.board.readEXP(address);
@@ -71,7 +71,7 @@ public class CPUMemory extends Memory  {
             wram[address & 0x7FF] = data;
         } else if (address < 0x4000 || address == 0x4014) {
             nes.ppu.write(address, data);
-        } else if (address >= 0x4000 && address <= 0x4018) {
+        } else if (address < 0x4020) {
             nes.apu.write(address, data);
         } else if (address < 0x6000) {
             nes.board.writeEXP(address, data);

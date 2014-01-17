@@ -120,6 +120,8 @@ public class Taito_X1_017 extends Board{
                 case 0x7EFC:
                     super.switch8kPRGbank(data >> 2, 0xC000);
                     break;
+                default:
+                    break;
             }
         }
     }

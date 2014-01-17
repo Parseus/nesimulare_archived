@@ -3,19 +3,15 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/CamericaQuattro.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/ROMLoader.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/BANDAI_74_161_02_74.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Mapper191.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Taito_X1_017.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Board.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/memory/CPUMemory.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/IremG101.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/TQROM.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Camerica.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Taito_TC0190FMC.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Taito_X1_005.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/TxROM.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/ROMLoader.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Mapper202.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Mapper046.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Jaleco_JF_13.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Sunsoft_2_3R.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/FrameLimiter.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/Tools.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/GUIImpl.java</file>
         </group>
     </open-files>
 </project-private>

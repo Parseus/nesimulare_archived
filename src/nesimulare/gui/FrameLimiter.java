@@ -71,10 +71,15 @@ public class FrameLimiter extends Thread {
     }
 
     public void sleepFixed() {
+        final double deltaFrameTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
+        currentFrameTime = framePeriod - deltaFrameTime;
+        
         try {
             Thread.sleep(100);
         } catch (InterruptedException ie) {
             nes.messageBox(ie.getMessage());
         }
+        
+        lastFrameTime = (System.nanoTime() / 1000000.0);
     }
 }

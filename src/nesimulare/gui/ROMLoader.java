@@ -24,8 +24,8 @@
 
 package nesimulare.gui;
 
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import nesimulare.core.Region;
@@ -59,7 +59,7 @@ public class ROMLoader {
         this.gui = gui;
         rom = Tools.readfromfile(filename);
         name = filename;
-        sha1 = calculateHash(rom);
+        sha1 = calculateHash(filename);
     }
     
     private void readHeader(int len) {
@@ -130,28 +130,32 @@ public class ROMLoader {
         return savesram;
     }
     
-    public final String calculateHash(int[] rom) {
-        String hash = null;
-        
+    public final String calculateHash(String fileName) {
         try {
             final MessageDigest md = MessageDigest.getInstance("SHA1");
-            final ByteBuffer buffer = ByteBuffer.allocate(rom.length * 4);
-            final IntBuffer intBuffer = buffer.asIntBuffer();
-            intBuffer.put(rom);
-            final byte[] result = md.digest(buffer.array());
+            final FileInputStream fis = new FileInputStream(fileName);
+            fis.skip(16);
+            final byte[] dataBytes = new byte[1024];
             
-            final StringBuffer sb = new StringBuffer();
+            int nread;
             
-            for (int i = 0; i < result.length; i++) {
-                sb.append(String.format("%02X", 0xFF & result[i]));
+            while ((nread = fis.read(dataBytes)) != -1) {
+                md.update(dataBytes, 0, nread);
             }
             
-            hash = sb.toString();
-        } catch (NoSuchAlgorithmException nsaex) {
-            gui.messageBox(nsaex.getMessage());
+            fis.close();
+            
+            final byte[] mdbytes = md.digest();
+            final StringBuilder sb = new StringBuilder("");
+            for (int i = 0; i < mdbytes.length; i++) {
+                sb.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
+            }
+            
+            return sb.toString();
+        } catch (IOException | NoSuchAlgorithmException ex) {
+            gui.messageBox(ex.getMessage());
+            return null;
         }
-        
-        return hash;
     }
     
     public Board loadROM() {
@@ -213,6 +217,7 @@ public class ROMLoader {
             case 13:
                 return new CPROM(prg, chr, trainer, haschrram);
             case 15:
+            case 169:
                 return new Mapper015(prg, chr, trainer, haschrram);
             case 18:
                 return new JalecoSS88006(prg, chr, trainer, haschrram);
@@ -235,8 +240,12 @@ public class ROMLoader {
                 } else {
                     return new AVE_NINA_01(prg, chr, trainer, haschrram);
                 }
+            case 46:
+                return new Mapper046(prg, chr, trainer, haschrram);
             case 58:
                 return new Mapper058(prg, chr, trainer, haschrram);
+            case 60:
+                return new Mapper060(prg, chr, trainer, haschrram);
             case 64:
                 return new Tengen_800032(prg, chr, trainer, haschrram);
             case 65:
@@ -259,6 +268,8 @@ public class ROMLoader {
                 return new VRC3(prg, chr, trainer, haschrram);
             case 75:
                 return new VRC1(prg, chr, trainer, haschrram);
+            case 76:
+                return new Namco_3446(prg, chr, trainer, haschrram);
             case 77:
                 return new IREM_74_161_161_21_138(prg, chr, trainer, haschrram);
             case 80:
@@ -271,6 +282,8 @@ public class ROMLoader {
                 return new Jaleco_JF_0x_10(prg, chr, trainer, haschrram);
             case 92:
                 return new Jaleco_JF_19(prg, chr, trainer, haschrram);
+            case 93:
+                return new Sunsoft_2_3R(prg, chr, trainer, haschrram);
             case 94:
                 return new UN1ROM(prg, chr, trainer, haschrram);
             case 96:
@@ -287,6 +300,8 @@ public class ROMLoader {
                 return new TAITO_74_161_161_32(prg, chr, trainer, haschrram);
             case 174:
                 return new Mapper174(prg, chr, trainer, haschrram);
+            case 180:
+                return new HVC_UNROM_74HC08(prg, chr, trainer, haschrram);
             case 184:
                 return new Sunsoft1(prg, chr, trainer, haschrram);
             case 185:
@@ -311,8 +326,12 @@ public class ROMLoader {
                 return new MLT_Action52(prg, chr, trainer, haschrram);
             case 232:
                 return new CamericaQuattro(prg, chr, trainer, haschrram);
+            case 240:
+                return new Mapper240(prg, chr, trainer, haschrram);
             case 242:
                 return new Mapper242(prg, chr, trainer, haschrram);
+            case 246:
+                return new Mapper246(prg, chr, trainer, haschrram);
             case 255:
                 return new Mapper255(prg, chr, trainer, haschrram);
             default:

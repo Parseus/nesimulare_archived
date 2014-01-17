@@ -62,11 +62,11 @@ public final class PPUMemory extends Memory {
     public int read(int address) {
         final int addr = address & mask;
         
-        if (addr >= 0x0000 && addr <= 0x1FFF) {
+        if (addr <= 0x1FFF) {
             return nes.board.readCHR(addr);
-        } else if (addr >= 0x2000 && addr <= 0x3EFF) {
+        } else if (addr <= 0x3EFF) {
             return readNametable(addr, board);
-        } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+        } else if (addr <= 0x3FFF) {
             return readPalette(addr);
         } else {
             //Open bus
@@ -78,11 +78,11 @@ public final class PPUMemory extends Memory {
     public void write(int address, int data) {
         final int addr = address & mask;
         
-        if (addr >= 0x0000 && addr <= 0x1FFF) {
+        if (addr <= 0x1FFF) {
             nes.board.writeCHR(addr, data);
-        } else if (addr >= 0x2000 && addr <= 0x3EFF) {
+        } else if (addr <= 0x3EFF) {
             writeNametable(addr, data, board);
-        } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+        } else if (addr <= 0x3FFF) {
             writePalette(addr, data);
         } 
     }
