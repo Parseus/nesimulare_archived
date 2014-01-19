@@ -35,7 +35,7 @@ import nesimulare.core.Region;
 public class Audio implements AudioInterface {
 
     public boolean soundEnable;
-    private SourceDataLine sdl;
+    public SourceDataLine sdl;
     private byte[] audiobuf;
     private int bufptr = 0;
     private final float outputvol;
@@ -103,15 +103,19 @@ public class Audio implements AudioInterface {
     @Override
     public void pause() {
         if (soundEnable) {
-            sdl.flush();
-            sdl.stop();
+            if (sdl.isRunning()) {
+                sdl.flush();
+                sdl.stop();
+            }   
         }
     }
 
     @Override
     public void resume() {
         if (soundEnable) {
-            sdl.start();
+            if (!sdl.isRunning()) {
+                sdl.start();
+            }
         }
     }
 

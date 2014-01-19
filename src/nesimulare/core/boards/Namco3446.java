@@ -28,10 +28,10 @@ package nesimulare.core.boards;
  *
  * @author Parseus
  */
-public class Namco_3446 extends Board {
+public class Namco3446 extends Board {
     private int command = 0;
     
-    public Namco_3446(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+    public Namco3446(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     

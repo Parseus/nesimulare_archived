@@ -53,11 +53,14 @@ public class NES extends Thread {
     public FrameLimiter frameLimiter = new FrameLimiter(this);
     public GUIImpl gui = new GUIImpl(this);
     public ROMLoader loader;
+    public AudioInterface audio;
+    private int sampleRate;
 
     public long framecount;
     public boolean runEmulation = false;
     private boolean softResetRequest = false;
     private boolean hardResetRequest = false;
+    public boolean frameAdvance = false;
     private String curRomPath, curRomName;
     public static boolean LOGGING = false;
     public static final boolean INTERIM = true;
@@ -86,12 +89,20 @@ public class NES extends Thread {
         apu = new APU(region, cpu, this);
         ppu = new PPU(region, this, cpu, ppuram);
         
-        
         generatePalette();
         ppu.initialize();
         apu.initialize();
         board.initialize();
         cpu.initialize();
+        
+        sampleRate = PrefsSingleton.get().getInt("sampleRate", 44100);
+        
+        if (audio != null) {
+            audio.destroy();
+        }
+        
+        audio = new Audio(this, sampleRate);
+        apu.setupPlayback();
     }
     
      public void run(final String romtoload) {
@@ -168,6 +179,10 @@ public class NES extends Thread {
                     _hardReset();
                     runEmulation = true;
                 }
+                
+                if (audio != null) {
+                    audio.pause();
+                }
             }  
         }  
     }
@@ -197,9 +212,10 @@ public class NES extends Thread {
     public void finishFrame(GUIInterface gui) {
         gui.setFrame(ppu.screen);
         
-        if (apu != null) {
-            apu.ai.outputSample(apu.pullSample());
-            apu.ai.flushFrame(frameLimiter.enabled);
+        if (audio != null) {
+            audio.resume();
+            audio.outputSample(apu.pullSample());
+            audio.flushFrame(frameLimiter.enabled);
         }
         
         if (frameLimiter != null && frameLimiter.enabled) {
@@ -211,6 +227,11 @@ public class NES extends Thread {
         }
             
         ++framecount;
+        
+        if (frameAdvance) {
+            frameAdvance = false;
+            runEmulation = false;
+        }
     }
     
     public void messageBox(final String message) {
@@ -286,5 +307,9 @@ public class NES extends Thread {
     
     public void toggleFrameLimiter() {
         frameLimiter.enabled ^= true;
+    }
+    
+    public boolean bufferHasLessThan(int samples) {
+        return audio.bufferHasLessThan(samples);
     }
 }

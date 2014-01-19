@@ -28,9 +28,6 @@ import java.util.ArrayList;
 import nesimulare.core.NES;
 import nesimulare.core.ProcessorBase;
 import nesimulare.core.cpu.CPU;
-import nesimulare.gui.Audio;
-import nesimulare.gui.AudioInterface;
-import nesimulare.gui.PrefsSingleton;
 import nesimulare.gui.Tools;
 
 /**
@@ -38,11 +35,9 @@ import nesimulare.gui.Tools;
  * @author Parseus
  */
 public class APU extends ProcessorBase {
-    public AudioInterface ai;
-    
     CPU cpu;
     NES nes;
-    Mixer mixer;
+    Mixer mixer = new Mixer();
     
     PulseChannel pulse1, pulse2;
     TriangleChannel triangle;
@@ -107,17 +102,10 @@ public class APU extends ProcessorBase {
         triangle = new TriangleChannel(system);
         noise = new NoiseChannel(system);
         dmc = new DMCChannel(system, this);
-        
-        setRegion();
     }
     
     @Override
     public final void initialize() {
-        if (ai != null) {
-            ai.destroy();
-        }
-        ai = new Audio(nes, sampleRate);
-        
         hardReset();
     }
     
@@ -140,14 +128,7 @@ public class APU extends ProcessorBase {
         }
     }
     
-    public void setupPlayback() {
-        sampleRate = PrefsSingleton.get().getInt("sampleRate", 44100);
-        
-        if (ai != null) {
-            ai.destroy();
-        }
-        ai = new Audio(nes, sampleRate);
-        
+    public void setupPlayback() {       
         samplePeriod = system.master;
         sampleSingle = system.cpu * sampleRate;
         
@@ -171,17 +152,13 @@ public class APU extends ProcessorBase {
     public void resetBuffer() {
         rPosition = wPosition = 0;
     }
-    
-    public boolean bufferHasLessThan(int samples) {
-        return ai.bufferHasLessThan(samples);
-    }
-    
+
     @Override
     public void hardReset() {
-        apuCycles = SequenceMode0[system.serial][0] - 10;
-        
         setRegion();
         
+        apuCycles = SequenceMode0[system.serial][0] - 10;
+
         clockLength = false;
         oddCycle = false;
         frameIRQFlag = false;
@@ -236,7 +213,7 @@ public class APU extends ProcessorBase {
     }
     
     public int read(final int address) {
-        int result = 0;
+        int result;
         
         switch (address) {
             case 0x4015:
@@ -365,7 +342,7 @@ public class APU extends ProcessorBase {
     @Override
     public void cycle(int cycles) {
         clockLength = false;
-        oddCycle = !oddCycle;
+        oddCycle ^= true;
         apuCycles--;
         
         if (apuCycles == 0) {
@@ -483,7 +460,7 @@ public class APU extends ProcessorBase {
                 expn += esc.mix();
             }
             
-            output = Mixer.mixSamples(pulse1.getOutput(), pulse2.getOutput(), triangle.getOutput(), 
+            output = mixer.mixSamples(pulse1.getOutput(), pulse2.getOutput(), triangle.getOutput(), 
                     noise.getOutput(), dmc.getOutput(), expn);
             
             if (output > 80) {
@@ -507,14 +484,14 @@ public class APU extends ProcessorBase {
     }
     
     public short mixSamples() {
-        return Mixer.mixSamples(pulse1.getOutput(), pulse2.getOutput(), triangle.getOutput(), noise.getOutput(), dmc.getOutput());
+        return mixer.mixSamples(pulse1.getOutput(), pulse2.getOutput(), triangle.getOutput(), noise.getOutput(), dmc.getOutput());
     }
     
-    public static class Mixer {
-        private static short mix_table[][][][][];
-        private static int accum;
-        private static int prev_x;
-        private static int prev_y;
+    static class Mixer {
+        private final short mix_table[][][][][];
+        private int accum;
+        private int prev_x;
+        private int prev_y;
         
         public Mixer() {
             mix_table = new short[16][][][][];
@@ -543,28 +520,23 @@ public class APU extends ProcessorBase {
             }
         }
         
-        private static short Filter(int value)
-            {
-                final int POLE = (int)(32767 * (1.0 - 0.9999));
+        private short Filter(int value) {    
+            final int POLE = (int)(32767 * (1.0 - 0.9999));
+    
+            accum -= prev_x;    
+            prev_x = value << 15;    
+            accum += prev_x - prev_y * POLE;
+            prev_y = accum >> 15;
 
-                accum -= prev_x;
-                prev_x = value << 15;
-                accum += prev_x - prev_y * POLE;
-                prev_y = accum >> 15;
+            return (short)prev_y;
+       }
 
-                return (short)prev_y;
-            }
-
-            public static short mixSamples(int pulse1, int pulse2, int triangle, int noise, int dmc)
-            {
-                return 0;
-//                return mix_table[pulse1][pulse2][triangle][noise][dmc];
-            }
-            public static short mixSamples(int pulse1, int pulse2, int triangle, int noise, int dmc, short exp)
-            {
-                return 0;
-                //return Filter(
-                  //  (mix_table[pulse1][pulse2][triangle][noise][dmc] >> 1) + (exp >> 1));
-            }
+       public short mixSamples(int pulse1, int pulse2, int triangle, int noise, int dmc) {
+            return mix_table[pulse1][pulse2][triangle][noise][dmc];
+       }
+            
+       public short mixSamples(int pulse1, int pulse2, int triangle, int noise, int dmc, short exp) {     
+           return Filter((mix_table[pulse1][pulse2][triangle][noise][dmc] >> 1) + (exp >> 1));     
+       }
     }
 } 

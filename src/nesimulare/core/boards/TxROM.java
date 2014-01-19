@@ -23,7 +23,6 @@
  */
 package nesimulare.core.boards;
 
-import java.util.Arrays;
 import nesimulare.core.cpu.CPU;
 import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
@@ -48,7 +47,7 @@ public class TxROM extends Board{
     protected boolean irqClear = false;
     protected int oldA12;
     protected int newA12;
-    protected int timer;
+    protected int irqTimer;
     
     public TxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
@@ -62,7 +61,6 @@ public class TxROM extends Board{
         register = 0;
         chrRegister = new int[6];
         prgRegister = new int[4];
-        Arrays.fill(chrRegister, 0);
         prgRegister[0] = 0;
         prgRegister[1] = 1;
         prgRegister[2] = (prg.length - 0x4000) >> 13;
@@ -78,7 +76,7 @@ public class TxROM extends Board{
         irqEnable = false;
         irqClear = false;
         oldA12 = newA12 = 0;
-        timer = 0;
+        irqTimer = 0;
     }
     
     @Override
@@ -154,7 +152,7 @@ public class TxROM extends Board{
         newA12 = address & 0x1000;
         
         if (oldA12 < newA12) {
-            if (timer > 8) {
+            if (irqTimer > 8) {
                 final int oldCounter = irqCounter;
                 
                 if (irqCounter == 0 || irqClear) {
@@ -170,13 +168,13 @@ public class TxROM extends Board{
                 irqClear = false;
             }
             
-            timer = 0;
+            irqTimer = 0;
         }
     }
     
     @Override
     public void clockPPUCycle() {
-        timer++;
+        irqTimer++;
     }
     
     protected void setupPRG() {
@@ -195,12 +193,12 @@ public class TxROM extends Board{
     
     protected void setupCHR() {
         if (chrMode) {
-            super.switch2kCHRbank(chrRegister[0] >> 1, 0x0000);
-            super.switch2kCHRbank(chrRegister[1] >> 1, 0x0800);
-            super.switch1kCHRbank(chrRegister[2], 0x1000);
-            super.switch1kCHRbank(chrRegister[3], 0x1400);
-            super.switch1kCHRbank(chrRegister[4], 0x1800);
-            super.switch1kCHRbank(chrRegister[5], 0x1C00);
+            super.switch2kCHRbank(chrRegister[0] >> 1, 0x1000);
+            super.switch2kCHRbank(chrRegister[1] >> 1, 0x1800);
+            super.switch1kCHRbank(chrRegister[2], 0x0000);
+            super.switch1kCHRbank(chrRegister[3], 0x0400);
+            super.switch1kCHRbank(chrRegister[4], 0x0800);
+            super.switch1kCHRbank(chrRegister[5], 0x0C00);
         } else {
             super.switch1kCHRbank(chrRegister[2], 0x0000);
             super.switch1kCHRbank(chrRegister[3], 0x0400);

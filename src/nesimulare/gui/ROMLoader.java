@@ -34,27 +34,30 @@ import nesimulare.core.boards.SxROM.SOROM;
 import nesimulare.core.memory.PPUMemory;
 
 public class ROMLoader {
-    public GUIImpl gui;
+    private final GUIImpl gui;
     public Board board;
-    public String name;
-    public int prgsize;
-    public int chrsize;
-    public PPUMemory.Mirroring mirroring;
-    public int mappertype;
-    public int submapper;
-    private int prgoff;
-    private int chroff;
-    public int prgram;
-    public int chrram;
-    private int tvmode;
-    private int vssystem;
-    private boolean hasTrainer = false;
-    public boolean savesram = false;
-    public boolean haschrram = false;
+    private final String name;
     private final int[] rom;
     private int[] header;
     public String sha1;
-
+    
+    public int prgromSize;
+    public int chrromSize;
+    private int prgramSize;
+    private int chrramSize;
+    private int prgOffset;
+    private int chrOffset;
+    
+    public PPUMemory.Mirroring mirroring;
+    public int mappertype;
+    public int submapper;
+    private int tvmode;
+    private int vssystem;
+    public int inesVersion = 1;
+    private boolean hasTrainer = false;
+    public boolean savesram = false;
+    private boolean haschrram = false;
+    
     public ROMLoader(String filename, GUIImpl gui) {
         this.gui = gui;
         rom = Tools.readfromfile(filename);
@@ -79,51 +82,74 @@ public class ROMLoader {
                 return;
             }
             
-            gui.messageBox("iNES Header Invalid");
+            gui.messageBox("Invalid iNES header!");
         }
         
-        prgsize = 16384 * header[4];
-        chrsize = 8192 * header[5];
+        if (header[11] + header[12] + header[13] + header[14] + header[15] != 0) {
+            gui.messageBox("Corrupted iNES header!");
+            return;
+        }
+        
+        prgromSize = 16384 * header[4];
+        chrromSize = 8192 * header[5];
         hasTrainer = Tools.getbit(header[6], 2);
-        mappertype = (header[6] >> 4);
-        if (header[11] + header[12] + header[13] + header[14]
-                    + header[15] == 0) {// fix for DiskDude
-                mappertype += ((header[7] >> 4) << 4);
-            }
+        mappertype = ((header[6] & 0xF0) >> 4) | (header[7] & 0xF0);
+        
         savesram = Tools.getbit(header[6], 1);
         mirroring = Tools.getbit(header[6], 3) ? PPUMemory.Mirroring.FOURSCREEN : 
                 (Tools.getbit(header[6], 0) ? PPUMemory.Mirroring.VERTICAL : PPUMemory.Mirroring.HORIZONTAL);
-//        if ((header[7] & 0x0C) == 0x08) {
-//            //iNES 2.0            
-//            mappertype |= (header[8] & 0x0F) << 8;
-//            submapper = (header[8] & 0xF0) << 4;
-//            prgsize |= (header[9] & 0x0F) << 8;
-//            chrsize |= (header[9] & 0xF0) << 4;
-//            prgram |= header[10];
-//            chrram |= header[11];
-//            tvmode |= header[12];
-//            vssystem |= header[13];
-//            
-//            gui.nes.setRegion(tvmode == 0 ? Region.NTSC : Region.PAL);
-//            
-//            if (((prgram & 0xF) == 0xF) || ((prgram & 0xF0) == 0xF0)) {
-//                //throw new Exception("Invalid PRG RAM size specified!");
-//            }
-//            if (((chrram & 0xF) == 0xF) || ((chrram & 0xF0) == 0xF0)) {
-//                //throw new Exception("Invalid CHR RAM size specified!");
-//            }
-//            if (((chrram & 0xF0) != 0)) {
-//               //throw new Exception("TODO: Implement battery-backed CHR RAM");
-//            }
-//        } else {
-////            for (int i = 8; i < 16; i++) {
-////                gui.messageBox("Byte " + i + " contains invalid data!");
-////                break;
-////            }
-//        } 
         
-        prgoff = 0;
-        chroff = prgsize;
+        prgramSize = header[8] == 0 ? 8192 : 8192 * header[8];
+        
+        if ((header[7] & 0x0C) == 0x08) {
+            //iNES 2.0
+            inesVersion = 2;
+            
+            mappertype |= (header[8] & 0x0F) << 8;
+            submapper = (header[8] & 0xF0) << 4;
+            prgromSize |= (header[9] & 0x0F) << 8;
+            chrromSize |= (header[9] & 0xF0) << 4;
+            prgramSize = header[10];
+            chrramSize = header[11];
+            tvmode = header[12];
+            vssystem = header[13];
+            
+            gui.nes.setRegion(tvmode == 0 ? Region.NTSC : Region.PAL);
+            
+            if (((prgramSize & 0xF) == 0xF) || ((prgramSize & 0xF0) == 0xF0)) {
+                gui.messageBox("Invalid PRG RAM size specified!");
+                return;
+            }
+            
+            if (((chrramSize & 0xF) == 0xF) || ((chrramSize & 0xF0) == 0xF0)) {
+                gui.messageBox("Invalid CHR RAM size specified!");
+                return;
+            }
+            
+            if (((chrramSize & 0xF0) != 0)) {
+               gui.messageBox("TODO: Implement battery-backed CHR RAM");
+            }
+            
+            if (header[14] != 0) {
+                gui.messageBox("Unrecognized data found at header offset 14!");
+                return;
+            }
+            
+            if (header[15] != 0) {
+                gui.messageBox("Unrecognized data found at header offset 15!");
+                return;
+            }
+        } else {
+            for (int i = 9; i < 16; i++) {
+                if (header[i] != 0) {
+                    gui.messageBox("Byte " + i + " contains invalid data!");
+                    break;
+                }
+            }
+        } 
+        
+        prgOffset = 0;
+        chrOffset = prgromSize;
     }
 
     public final boolean hasSRAM() {
@@ -161,179 +187,187 @@ public class ROMLoader {
     public Board loadROM() {
         parseInesHeader();
         
-        haschrram = (chrsize == 0);
+        haschrram = (chrromSize == 0);
         
         if (haschrram) {
-            if (chrram == 0) {
-                chrsize = 0x2000;
+            if (chrramSize == 0) {
+                chrromSize = 0x2000;
             } else {
-                chrsize = chrram;
+                chrromSize = chrramSize;
             }
         }
         
-        final int[] prg = new int[prgsize];
-        final int[] chr = new int[chrsize];
+        final int[] prgrom = new int[prgromSize];
+        final int[] chrrom = new int[chrromSize];
         int[] trainer = null;
         
         if (hasTrainer) {
             trainer = new int[512];
             System.arraycopy(rom, 16, trainer, 0, 512);
-            System.arraycopy(rom, 16 + 512 + prgoff, prg, 0, prgsize);
+            System.arraycopy(rom, 16 + 512 + prgOffset, prgrom, 0, prgromSize);
             if (!haschrram) {
-                System.arraycopy(rom, 16 + 512 + chroff, chr, 0, chrsize);
+                System.arraycopy(rom, 16 + 512 + chrOffset, chrrom, 0, chrromSize);
             }
         } else {
-            System.arraycopy(rom, 16 + prgoff, prg, 0, prgsize);
+            System.arraycopy(rom, 16 + prgOffset, prgrom, 0, prgromSize);
             if (!haschrram) {
-                System.arraycopy(rom, 16 + chroff, chr, 0, chrsize);
+                System.arraycopy(rom, 16 + chrOffset, chrrom, 0, chrromSize);
             }
         }
 
         switch (mappertype) {
             case 0:
-                return new NROM(prg, chr, trainer, haschrram);
+                return new NROM(prgrom, chrrom, trainer, haschrram);
             case 1:
                 if (header[4] < 16) {
-                    return new SxROM(prg, chr, trainer, haschrram);
+                    return new SxROM(prgrom, chrrom, trainer, haschrram);
                 } else if (header[4] >= 16) {
-                    return new SOROM(prg, chr, trainer, haschrram);
+                    return new SOROM(prgrom, chrrom, trainer, haschrram);
                 }
             case 2:
-                return new UxROM(prg, chr, trainer, haschrram);
+                return new UxROM(prgrom, chrrom, trainer, haschrram);
             case 3:
-                return new CNROM(prg, chr, trainer, haschrram);
+                return new CNROM(prgrom, chrrom, trainer, haschrram);
             case 4:
-                return new TxROM(prg, chr, trainer, haschrram);
+                return new TxROM(prgrom, chrrom, trainer, haschrram);
             case 5:
-                return new ExROM(prg, chr, trainer, haschrram);
+                return new ExROM(prgrom, chrrom, trainer, haschrram);
             case 7:
-                return new AxROM(prg, chr, trainer, haschrram);
+                return new AxROM(prgrom, chrrom, trainer, haschrram);
             case 9:
-                return new PxROM(prg, chr, trainer, haschrram);
+                return new PxROM(prgrom, chrrom, trainer, haschrram);
             case 10:
-                return new FxROM(prg, chr, trainer, haschrram);
+                return new FxROM(prgrom, chrrom, trainer, haschrram);
             case 11:
-                return new ColorDreams(prg, chr, trainer, haschrram);
+                return new ColorDreams(prgrom, chrrom, trainer, haschrram);
             case 13:
-                return new CPROM(prg, chr, trainer, haschrram);
+                return new CPROM(prgrom, chrrom, trainer, haschrram);
             case 15:
             case 169:
-                return new Mapper015(prg, chr, trainer, haschrram);
+                return new Mapper015(prgrom, chrrom, trainer, haschrram);
             case 18:
-                return new JalecoSS88006(prg, chr, trainer, haschrram);
+                return new JalecoSS88006(prgrom, chrrom, trainer, haschrram);
             case 19:
-                return new Namco163(prg, chr, trainer, haschrram);
+                return new Namco163(prgrom, chrrom, trainer, haschrram);
             case 22:
             case 23:
-                return new VRC2(prg, chr, trainer, haschrram);
+                return new VRC2(prgrom, chrrom, trainer, haschrram);
             case 24:
             case 26:
-                return new VRC6(prg, chr, trainer, haschrram);
+                return new VRC6(prgrom, chrrom, trainer, haschrram);
             case 32:
-                return new IremG101(prg, chr, trainer, haschrram);
+                return new IremG101(prgrom, chrrom, trainer, haschrram);
             case 33:
             case 48:
-                return new Taito_TC0190FMC(prg, chr, trainer, haschrram);
+                return new Taito_TC0190FMC(prgrom, chrrom, trainer, haschrram);
             case 34:
-                if (chrsize <= 8192) {
-                    return new BxROM(prg, chr, trainer, haschrram);
+                if (chrromSize <= 8192) {
+                    return new BxROM(prgrom, chrrom, trainer, haschrram);
                 } else {
-                    return new AVE_NINA_01(prg, chr, trainer, haschrram);
+                    return new AVE_NINA_01(prgrom, chrrom, trainer, haschrram);
                 }
             case 46:
-                return new Mapper046(prg, chr, trainer, haschrram);
+                return new Mapper046(prgrom, chrrom, trainer, haschrram);
             case 58:
-                return new Mapper058(prg, chr, trainer, haschrram);
+                return new Mapper058(prgrom, chrrom, trainer, haschrram);
             case 60:
-                return new Mapper060(prg, chr, trainer, haschrram);
+                return new Mapper060(prgrom, chrrom, trainer, haschrram);
             case 64:
-                return new Tengen_800032(prg, chr, trainer, haschrram);
+                return new Tengen_800032(prgrom, chrrom, trainer, haschrram);
             case 65:
-                return new IremH3001(prg, chr, trainer, haschrram);
+                return new IremH3001(prgrom, chrrom, trainer, haschrram);
             case 66:
-                return new GxROM(prg, chr, trainer, haschrram);
+                return new GxROM(prgrom, chrrom, trainer, haschrram);
             case 67:
-                return new Sunsoft3(prg, chr, trainer, haschrram);
+                return new Sunsoft3(prgrom, chrrom, trainer, haschrram);
             case 68:
-                return new Sunsoft4(prg, chr, trainer, haschrram);
+                return new Sunsoft4(prgrom, chrrom, trainer, haschrram);
             case 69:
-                return new Sunsoft_FME7(prg, chr, trainer, haschrram);
+                return new Sunsoft_FME7(prgrom, chrrom, trainer, haschrram);
             case 70:
-                return new BANDAI_74_161_161_32(prg, chr, trainer, haschrram);
+                return new BANDAI_74_161_161_32(prgrom, chrrom, trainer, haschrram);
             case 71:
-                return new Camerica(prg, chr, trainer, haschrram);
+                return new Camerica(prgrom, chrrom, trainer, haschrram);
             case 72:
-                return new Jaleco_JF_17(prg, chr, trainer, haschrram);
+                return new Jaleco_JF_17(prgrom, chrrom, trainer, haschrram);
             case 73:
-                return new VRC3(prg, chr, trainer, haschrram);
+                return new VRC3(prgrom, chrrom, trainer, haschrram);
             case 75:
-                return new VRC1(prg, chr, trainer, haschrram);
+                return new VRC1(prgrom, chrrom, trainer, haschrram);
             case 76:
-                return new Namco_3446(prg, chr, trainer, haschrram);
+                return new Namco3446(prgrom, chrrom, trainer, haschrram);
             case 77:
-                return new IREM_74_161_161_21_138(prg, chr, trainer, haschrram);
+                return new IREM_74_161_161_21_138(prgrom, chrrom, trainer, haschrram);
             case 80:
-                return new Taito_X1_005(prg, chr, trainer, haschrram);
+                return new Taito_X1_005(prgrom, chrrom, trainer, haschrram);
             case 82:
-                return new Taito_X1_017(prg, chr, trainer, haschrram);
+                return new Taito_X1_017(prgrom, chrrom, trainer, haschrram);
             case 86:
-                return new Jaleco_JF_13(prg, chr, trainer, haschrram);
+                return new Jaleco_JF_13(prgrom, chrrom, trainer, haschrram);
             case 87:
-                return new Jaleco_JF_0x_10(prg, chr, trainer, haschrram);
+                return new Jaleco_JF_0x_10(prgrom, chrrom, trainer, haschrram);
+            case 88:
+                return new Namco3433_3443(prgrom, chrrom, trainer, haschrram);
             case 92:
-                return new Jaleco_JF_19(prg, chr, trainer, haschrram);
+                return new Jaleco_JF_19(prgrom, chrrom, trainer, haschrram);
             case 93:
-                return new Sunsoft_2_3R(prg, chr, trainer, haschrram);
+                return new Sunsoft_2_3R(prgrom, chrrom, trainer, haschrram);
             case 94:
-                return new UN1ROM(prg, chr, trainer, haschrram);
+                return new UN1ROM(prgrom, chrrom, trainer, haschrram);
+            case 95:
+                return new Namco3425(prgrom, chrrom, trainer, haschrram);
             case 96:
-                return new BANDAI_74_161_02_74(prg, chr, trainer, haschrram);
+                return new BANDAI_74_161_02_74(prgrom, chrrom, trainer, haschrram);
             case 97:
-                return new Irem_TAM_S1(prg, chr, trainer, haschrram);
+                return new Irem_TAM_S1(prgrom, chrrom, trainer, haschrram);
             case 118:
-                return new TxSROM(prg, chr, trainer, haschrram);
+                return new TxSROM(prgrom, chrrom, trainer, haschrram);
             case 119:
-                return new TQROM(prg, chr, trainer, haschrram);
+                return new TQROM(prgrom, chrrom, trainer, haschrram);
             case 140:
-                return new Jaleco_JF_11_14(prg, chr, trainer, haschrram);
+                return new Jaleco_JF_11_14(prgrom, chrrom, trainer, haschrram);
             case 152:
-                return new TAITO_74_161_161_32(prg, chr, trainer, haschrram);
+                return new TAITO_74_161_161_32(prgrom, chrrom, trainer, haschrram);
+            case 154:
+                return new Namco3453(prgrom, chrrom, trainer, haschrram);
             case 174:
-                return new Mapper174(prg, chr, trainer, haschrram);
+                return new Mapper174(prgrom, chrrom, trainer, haschrram);
             case 180:
-                return new HVC_UNROM_74HC08(prg, chr, trainer, haschrram);
+                return new HVC_UNROM_74HC08(prgrom, chrrom, trainer, haschrram);
             case 184:
-                return new Sunsoft1(prg, chr, trainer, haschrram);
+                return new Sunsoft1(prgrom, chrrom, trainer, haschrram);
             case 185:
-                return new Mapper185(prg, chr, trainer, haschrram);
+                return new Mapper185(prgrom, chrrom, trainer, haschrram);
             case 191:
-                return new Mapper191(prg, chr, trainer, haschrram);
+                return new Mapper191(prgrom, chrrom, trainer, haschrram);
             case 201:
-                return new Mapper201(prg, chr, trainer, haschrram);
+                return new Mapper201(prgrom, chrrom, trainer, haschrram);
             case 202:
-                return new Mapper202(prg, chr, trainer, haschrram);
+                return new Mapper202(prgrom, chrrom, trainer, haschrram);
             case 203:
-                return new Mapper203(prg, chr, trainer, haschrram);
+                return new Mapper203(prgrom, chrrom, trainer, haschrram);
             case 204:
-                return new Mapper204(prg, chr, trainer, haschrram);
+                return new Mapper204(prgrom, chrrom, trainer, haschrram);
             case 205:
-                return new Mapper205(prg, chr, trainer, haschrram);
+                return new Mapper205(prgrom, chrrom, trainer, haschrram);
+            case 206:
+                return new Namco118(prgrom, chrrom, trainer, haschrram);
             case 207:
-                return new Mapper207(prg, chr, trainer, haschrram);
+                return new Mapper207(prgrom, chrrom, trainer, haschrram);
             case 213:
-                return new Mapper213(prg, chr, trainer, haschrram);
+                return new Mapper213(prgrom, chrrom, trainer, haschrram);
             case 228:
-                return new MLT_Action52(prg, chr, trainer, haschrram);
+                return new MLT_Action52(prgrom, chrrom, trainer, haschrram);
             case 232:
-                return new CamericaQuattro(prg, chr, trainer, haschrram);
+                return new CamericaQuattro(prgrom, chrrom, trainer, haschrram);
             case 240:
-                return new Mapper240(prg, chr, trainer, haschrram);
+                return new Mapper240(prgrom, chrrom, trainer, haschrram);
             case 242:
-                return new Mapper242(prg, chr, trainer, haschrram);
+                return new Mapper242(prgrom, chrrom, trainer, haschrram);
             case 246:
-                return new Mapper246(prg, chr, trainer, haschrram);
+                return new Mapper246(prgrom, chrrom, trainer, haschrram);
             case 255:
-                return new Mapper255(prg, chr, trainer, haschrram);
+                return new Mapper255(prgrom, chrrom, trainer, haschrram);
             default:
                 gui.messageBox("Couldn't load the ROM file!\nUnsupported mapper: " + mappertype);
                 return null;
@@ -361,8 +395,8 @@ public class ROMLoader {
         return ("ROM info:\n"
                 + "Filename:     " + name + "\n"
                 + "Mapper:       " + mappertype + getBoardName() + "\n"
-                + "PRG-ROM Size:     " + prgsize / 1024 + " kB\n"
-                + "CHR-ROM Size:     " + (haschrram ? 0 : chrsize / 1024) + " kB\n"
+                + "PRG-ROM Size:     " + prgromSize / 1024 + " kB\n"
+                + "CHR-ROM Size:     " + (haschrram ? 0 : chrromSize / 1024) + " kB\n"
                 + "Mirroring:    " + mirroring.toString() + "\n"
                 + "Battery Save: " + ((savesram) ? "Yes\n" : "No\n"))
                 + "SHA-1: " + sha1;
