@@ -100,7 +100,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
     
     @Override
     public final synchronized void setFrame(int[][] frame) {
-        final double fps = nes.frameLimiter.deltaFrameTime;
+        final double fps = nes.frameLimiter.frameTime;
         this.setTitle(String.format("NESimulare (%s) - %s, %2.2f fps",
             dateFormat.format(date), nes.getCurrentRomName(), fps));
         

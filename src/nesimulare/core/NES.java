@@ -106,7 +106,7 @@ public class NES extends Thread {
     }
     
      public void run(final String romtoload) {
-        //Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 1);
+        Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 1);
         //set thread priority higher than the interface thread
         curRomPath = romtoload;
         loadROM(romtoload);
@@ -218,7 +218,7 @@ public class NES extends Thread {
             audio.flushFrame(frameLimiter.enabled);
         }
         
-        if (frameLimiter != null && frameLimiter.enabled) {
+        if (frameLimiter != null) {
             frameLimiter.sleep();
         }
         

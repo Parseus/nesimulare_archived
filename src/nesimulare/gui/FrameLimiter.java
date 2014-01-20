@@ -34,11 +34,13 @@ import nesimulare.core.Region;
 
 public class FrameLimiter extends Thread {
     NES nes;
+    public double frameTime;
+    private double elapsedTime;
+    private double fps;
+    private double framePeriod;
+    private double lastFrameTime;
+    private double sleepTime;
     public boolean enabled;
-    public double framePeriod;
-    public double currentFrameTime;
-    public double lastFrameTime;
-    public double deltaFrameTime;
 
     public FrameLimiter(NES nes) {
         super();
@@ -49,19 +51,21 @@ public class FrameLimiter extends Thread {
     }
     
     public final void hardReset() {
-        final double fps = (nes.region == Region.NTSC) ? 60.098813897440515532 : 50.006977968268290849;
+        fps = (nes.region == Region.NTSC) ? 60.098813897440515532 : 50.006977968268290849;
         framePeriod = 1000 / fps;
     }
 
     public void sleep() {
         //Frame Limiter
-        deltaFrameTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
-        currentFrameTime = framePeriod - deltaFrameTime;
+        elapsedTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
+        sleepTime = (framePeriod - elapsedTime);
+        
+        frameTime = enabled ? fps - sleepTime : 1000 / elapsedTime;
         
         if (enabled) {
-            if (currentFrameTime > 0) {
+            if (sleepTime > 0) {
                 try {
-                    Thread.sleep((long) currentFrameTime);
+                    Thread.sleep((int)sleepTime);
                 } catch (InterruptedException ie) {
                     nes.messageBox(ie.getMessage());
                 }
@@ -72,8 +76,8 @@ public class FrameLimiter extends Thread {
     }
 
     public void sleepFixed() {
-        deltaFrameTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
-        currentFrameTime = framePeriod - deltaFrameTime;
+        elapsedTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
+        sleepTime = framePeriod - elapsedTime;
         
         try {
             Thread.sleep(100);
