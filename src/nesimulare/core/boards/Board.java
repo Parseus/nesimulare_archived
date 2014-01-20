@@ -291,7 +291,7 @@ public class Board {
     }
     
     public int readNametable(int address) {
-        return 0;
+        return address >> 8;
     }
     
     public void writeNametable(final int address, final int data) {

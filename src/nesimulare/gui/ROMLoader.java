@@ -266,8 +266,12 @@ public class ROMLoader {
                 } else {
                     return new AVE_NINA_01(prgrom, chrrom, trainer, haschrram);
                 }
+            case 37:
+                return new NES_ZZ(prgrom, chrrom, trainer, haschrram);
             case 46:
                 return new Mapper046(prgrom, chrrom, trainer, haschrram);
+            case 47:
+                return new NES_QJ(prgrom, chrrom, trainer, haschrram);
             case 58:
                 return new Mapper058(prgrom, chrrom, trainer, haschrram);
             case 60:
@@ -298,16 +302,22 @@ public class ROMLoader {
                 return new Namco3446(prgrom, chrrom, trainer, haschrram);
             case 77:
                 return new IREM_74_161_161_21_138(prgrom, chrrom, trainer, haschrram);
+            case 78:
+                return new Jaleco_JF_16(prgrom, chrrom, trainer, haschrram);
             case 80:
                 return new Taito_X1_005(prgrom, chrrom, trainer, haschrram);
             case 82:
                 return new Taito_X1_017(prgrom, chrrom, trainer, haschrram);
+            case 85:
+                return new VRC7(prgrom, chrrom, trainer, haschrram);
             case 86:
                 return new Jaleco_JF_13(prgrom, chrrom, trainer, haschrram);
             case 87:
                 return new Jaleco_JF_0x_10(prgrom, chrrom, trainer, haschrram);
             case 88:
                 return new Namco3433_3443(prgrom, chrrom, trainer, haschrram);
+            case 89:
+                return new Sunsoft_2_3(prgrom, chrrom, trainer, haschrram);
             case 92:
                 return new Jaleco_JF_19(prgrom, chrrom, trainer, haschrram);
             case 93:

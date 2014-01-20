@@ -38,6 +38,7 @@ public class FrameLimiter extends Thread {
     public double framePeriod;
     public double currentFrameTime;
     public double lastFrameTime;
+    public double deltaFrameTime;
 
     public FrameLimiter(NES nes) {
         super();
@@ -54,7 +55,7 @@ public class FrameLimiter extends Thread {
 
     public void sleep() {
         //Frame Limiter
-        final double deltaFrameTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
+        deltaFrameTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
         currentFrameTime = framePeriod - deltaFrameTime;
         
         if (enabled) {
@@ -71,7 +72,7 @@ public class FrameLimiter extends Thread {
     }
 
     public void sleepFixed() {
-        final double deltaFrameTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
+        deltaFrameTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
         currentFrameTime = framePeriod - deltaFrameTime;
         
         try {
