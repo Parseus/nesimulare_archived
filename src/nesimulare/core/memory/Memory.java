@@ -39,7 +39,7 @@ public class Memory {
     }
     
     public int read (final int addr) {
-        return (addr >> 8) & mask;
+        return (addr >> 8);
     }
     
     public void write (final int addr, final int data) {

@@ -3,18 +3,20 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/Audio.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Mapper240.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Board.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/ROMLoader.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/NES.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Namco_3446.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/audio/APU.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/input/Zapper.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Namco3425.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Namco3433_3443.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/RGBRenderer.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Jaleco_JF_13.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Sunsoft_2_3R.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/ppu/PPU.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Namco118.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/FrameLimiter.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/Tools.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/Renderer.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/GUIImpl.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Namco3453.java</file>
         </group>
     </open-files>
 </project-private>

@@ -34,11 +34,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.prefs.Preferences;
 import nesimulare.gui.PrefsSingleton;
 
-import net.java.games.input.Component;
-import net.java.games.input.Controller;
-import net.java.games.input.ControllerEnvironment;
-import net.java.games.input.Event;
-import net.java.games.input.EventQueue;
+import net.java.games.input.*;
 import nesimulare.gui.Tools;
 
 /**
@@ -48,7 +44,6 @@ import nesimulare.gui.Tools;
  * (cf. http://java.net/projects/jinput).
  */
 public class Joypad extends java.awt.Component implements KeyListener {
-
     private final java.awt.Component parent;
     private Controller gameController;
     private Component[] buttons;
@@ -128,9 +123,7 @@ public class Joypad extends java.awt.Component implements KeyListener {
      * of the joystick / gamepad events.
      */
     public void startEventQueue() {
-//        if (System.getProperty("java.class.path").contains("jinput")) {
         thread.execute(eventQueueLoop());
-//        }
     }
     double threshold = 0.25;
 
@@ -210,16 +203,8 @@ public class Joypad extends java.awt.Component implements KeyListener {
     private boolean isPressed(Event event) {
         Component component = event.getComponent();
         if (component.isAnalog()) {
-            if (Math.abs(event.getValue()) > 0.2f) {
-                return true;
-            } else {
-                return false;
-            }
-        } else if (event.getValue() == 0) {
-            return false;
-        } else {
-            return true;
-        }
+            return Math.abs(event.getValue()) > 0.2f;
+        } else return event.getValue() != 0;
     }
 
     /**
@@ -317,7 +302,6 @@ public class Joypad extends java.awt.Component implements KeyListener {
         if (controllers.length > controllerNumber) {
             this.gameController = controllers[controllerNumber];
             PrefsSingleton.get().put("controller" + controllerNumber, gameController.getName());
-            System.err.println(controllerNumber + 1 + ". " + gameController.getName());
             this.buttons = getButtons(controllers[controllerNumber]);
         } else {
             PrefsSingleton.get().put("controller" + controllerNumber,"");

@@ -62,7 +62,6 @@ public class CPU extends ProcessorBase implements Opcodes {
     private static final int IRQ_VECTOR_H = 0xffff;
 
     /* Logging (for debugging) */
-    private static final boolean LOGGING = false;
     public FileWriter fw; //debug log writer
 
     /* DMA types */
@@ -479,21 +478,6 @@ public class CPU extends ProcessorBase implements Opcodes {
             default:
                 break;
         }
-        
-        // Logging (debugging only)
-        if (LOGGING) {
-            try {
-                //Note: This *might* trigger side effects if logging while executing
-                //code from I/O registers. So don't do that.
-                fw.write(getCPUState().toTraceEvent() + " CYC:" + nes.ppu.hclock + " SL:" + nes.ppu.vclock + "\n");
-                
-                if (state.stepCounter == 0) {
-                    fw.flush();
-                }
-            } catch (IOException ioe) {
-                nes.messageBox("Cannot write to debug log: " + ioe.getMessage());
-            }
-        }
 
         // Execute
         switch (state.ir) {
@@ -507,7 +491,7 @@ public class CPU extends ProcessorBase implements Opcodes {
                 setIrqDisableFlag();
                     
                 // Write to debug writer about the interrupt (debugging only)
-                if (LOGGING) {
+                if (NES.LOGGING) {
                     try {
                         fw.write("**BREAK INTERRUPT**\n");
                     } catch (IOException ioe) {
@@ -1285,7 +1269,7 @@ public class CPU extends ProcessorBase implements Opcodes {
             stackPush(state.getStatusFlag());      // Status register
             setIrqDisableFlag();
             
-            if (LOGGING) {
+            if (NES.LOGGING) {
                 try {
                     fw.write("**INTERRUPT: ");
                 } catch (IOException ioe) {
@@ -1300,7 +1284,7 @@ public class CPU extends ProcessorBase implements Opcodes {
                 //If NMI is requested, hijack the IRQ request
                 state.pc = address(read(NMI_VECTOR_L), read(NMI_VECTOR_H));
                 
-                if (LOGGING) {
+                if (NES.LOGGING) {
                     try {
                         fw.write("NMI**\n");
                     } catch (IOException ioe) {
@@ -1310,7 +1294,7 @@ public class CPU extends ProcessorBase implements Opcodes {
             } else {
                 state.pc = address(read(IRQ_VECTOR_L), read(IRQ_VECTOR_H));
                 
-                if (LOGGING) {
+                if (NES.LOGGING) {
                     try {
                         fw.write("IRQ**\n");
                     } catch (IOException ioe) {
@@ -1665,54 +1649,6 @@ public class CPU extends ProcessorBase implements Opcodes {
     }
 
     /**
-     * 
-     * @return 
-     */
-    public String getAccumulatorStatus() {
-        return "$" + Tools.byteToHex(state.a);
-    }
-
-    /**
-     * 
-     * @return 
-     */
-    public String getXRegisterStatus() {
-        return "$" + Tools.byteToHex(state.x);
-    }
-
-    /**
-     * 
-     * @return 
-     */
-    public String getYRegisterStatus() {
-        return "$" + Tools.byteToHex(state.y);
-    }
-
-    /**
-     * 
-     * @return 
-     */
-    public String getProgramCounterStatus() {
-        return "$" + Tools.wordToHex(state.pc);
-    }
-
-    /**
-     * 
-     * @return 
-     */
-    public String getStackPointerStatus() {
-        return "$" + Tools.byteToHex(state.sp);
-    }
-
-    /**
-     * 
-     * @return 
-     */
-    public int getProcessorStatus() {
-        return state.getStatusFlag();
-    }
-
-    /**
      * Push an item onto the stack, and decrement the stack counter.
      * Will wrap-around if already at the bottom of the stack (This
      * is the same behavior as the real 6502)
@@ -1764,7 +1700,7 @@ public class CPU extends ProcessorBase implements Opcodes {
      * Given a hi byte and a low byte, return the Absolute,X
      * offset address.
      */
-        final int xAddress(int lowByte, int hiByte) {
+    final int xAddress(int lowByte, int hiByte) {
         return (address((lowByte + state.x) & 0xff, hiByte)) & 0xffff;
     }
 
@@ -1891,7 +1827,7 @@ public class CPU extends ProcessorBase implements Opcodes {
         /**
          * @return The value of the Process Status Register, as a byte.
          */
-        public int getStatusFlag() {
+        private int getStatusFlag() {
             int status = 0x20;
             
             if (carryFlag) {
@@ -1920,7 +1856,7 @@ public class CPU extends ProcessorBase implements Opcodes {
          * 
          * @return 
          */
-        public String getInstructionByteStatus() {
+        private String getInstructionByteStatus() {
             switch (CPU.instructionSizes[ir]) {
                 case 1:
                     return Tools.wordToHex(lastPc) + "  " +
@@ -1949,7 +1885,7 @@ public class CPU extends ProcessorBase implements Opcodes {
          *
          * @return A string representing the mnemonic and datas of the instruction
          */
-        public String disassembleOp() {
+        private String disassembleOp() {
             final String mnemonic = opcodeNames[ir];
             final StringBuilder sb = new StringBuilder(mnemonic);
 
@@ -2056,11 +1992,10 @@ public class CPU extends ProcessorBase implements Opcodes {
             return ((hiByte << 8) | lowByte) & 0xffff;
         }
 
-
         /**
          * @return A string representing the current status register state.
          */
-        public String getProcessorStatusString() {
+        private String getProcessorStatusString() {
             final StringBuilder sb = new StringBuilder("[");
             
             sb.append(negativeFlag ? 'N' : '.');    // Bit 7

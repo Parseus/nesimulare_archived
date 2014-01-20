@@ -34,6 +34,7 @@ public class PaletteGenerator {
     static final float BLACK = 0.518F;
     static final float WHITE = 1.962F;
     static final float ATTENTUATION = 0.746F;
+    static final float WB = WHITE - BLACK;
     
     static float saturation = 1.0F;
     static float hueTweak = 0.0F;
@@ -76,7 +77,7 @@ public class PaletteGenerator {
                 spot *= ATTENTUATION;
             }
             
-            float v = (spot - BLACK) / (WHITE - BLACK);
+            float v = (spot - BLACK) / WB;
             v = (v - 0.5f) * contrast + 0.5f;
             v *= brightness / 12.0f;
             y += v;
