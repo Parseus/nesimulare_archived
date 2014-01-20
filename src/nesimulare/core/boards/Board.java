@@ -31,7 +31,6 @@ import nesimulare.core.NES;
  * @author Parseus
  */
 public class Board {
-
     NES nes;
     
     protected int[] prg;

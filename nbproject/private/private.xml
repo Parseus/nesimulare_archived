@@ -6,17 +6,11 @@
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Board.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/ROMLoader.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/NES.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/input/Zapper.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Namco3425.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Namco3433_3443.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/RGBRenderer.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Jaleco_JF_13.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/AxROM.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/ppu/PPU.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Namco118.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/FrameLimiter.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/Renderer.java</file>
+            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/TxROM.java</file>
             <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/gui/GUIImpl.java</file>
-            <file>file:/F:/Java/ParsNES/trunk/NESimulare/src/nesimulare/core/boards/Namco3453.java</file>
         </group>
     </open-files>
 </project-private>

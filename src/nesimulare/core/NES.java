@@ -26,6 +26,7 @@ package nesimulare.core;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.locks.ReentrantLock;
 import nesimulare.gui.*;
 import nesimulare.core.audio.APU;
 import nesimulare.core.boards.Board;
@@ -54,9 +55,11 @@ public class NES extends Thread {
     public GUIImpl gui = new GUIImpl(this);
     public ROMLoader loader;
     public AudioInterface audio;
+    private final ReentrantLock lock = new ReentrantLock();
     private int sampleRate;
 
     public long framecount;
+    private boolean coreEnabled = true;
     public boolean runEmulation = false;
     private boolean softResetRequest = false;
     private boolean hardResetRequest = false;
@@ -66,12 +69,12 @@ public class NES extends Thread {
     public static final boolean INTERIM = true;
     
     public NES() {
-        //super ("Emulation core");
+        super ("Emulation core");
         
         try {
             java.awt.EventQueue.invokeAndWait(gui);
         } catch (InterruptedException | InvocationTargetException e) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Could not initialze GUI: " + e.getMessage());
+            javax.swing.JOptionPane.showMessageDialog(null, "Could not initialize GUI: " + e.getMessage());
             System.exit(-1);
         }
     }
@@ -110,7 +113,7 @@ public class NES extends Thread {
         //set thread priority higher than the interface thread
         curRomPath = romtoload;
         loadROM(romtoload);
-        start();
+        new Thread(this).start();
     }
     
     public void hardReset() {
@@ -119,7 +122,7 @@ public class NES extends Thread {
         runEmulation = false;
     }
     
-    private void _hardReset() {
+    private synchronized void _hardReset() {
         generatePalette();
         cpuram.hardReset();
         ppuram.hardReset();
@@ -136,55 +139,60 @@ public class NES extends Thread {
         runEmulation = false;
     }
     
-    private void _softReset() {
+    private synchronized void _softReset() {
         board.softReset();
         apu.softReset();
         cpu.softReset();
     }
-    
+
     @Override
     public synchronized void run() {
         if (board == null) {
             return;
         }
         
-        while (true) {
-            if (runEmulation) {  
-                if (LOGGING) {
-                    try {
-                        cpu.fw.write(cpu.getCPUState().toTraceEvent() + " CYC:" + ppu.hclock + " SL:" + ppu.vclock + "\n");
-                
-                        if (cpu.getCPUState().stepCounter == 0) {
-                            cpu.fw.flush();
+        lock.lock();
+        try {
+            while (coreEnabled) {
+                if (runEmulation) {
+                    if (LOGGING) {
+                        try {
+                            cpu.fw.write(cpu.getCPUState().toTraceEvent() + " CYC:" + ppu.hclock + " SL:" + ppu.vclock + "\n");
+                            
+                            if (cpu.getCPUState().stepCounter == 0) {
+                                cpu.fw.flush();
+                            }
+                        } catch (IOException ioe) {
+                            messageBox("Cannot write to debug log: " + ioe.getMessage());
+                        } finally {
+                            System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
                         }
-                    } catch (IOException ioe) {
-                        messageBox("Cannot write to debug log: " + ioe.getMessage());
-                    } finally {
-                        System.err.println(cpu.getCPUState().toTraceEvent() + " " + ppu.hclock + " " + ppu.vclock);
+                    }
+                    
+                    cpu.cycle();
+                } else {
+                    if (frameLimiter != null) {
+                        frameLimiter.sleepFixed();
+                    }
+                    
+                    if (softResetRequest) {
+                        softResetRequest = false;
+                        _softReset();
+                        runEmulation = true;
+                    } else if (hardResetRequest) {
+                        hardResetRequest = false;
+                        _hardReset();
+                        runEmulation = true;
+                    }
+                    
+                    if (audio != null) {
+                        audio.pause();
                     }
                 }
-                
-                cpu.cycle();
-            } else { 
-                if (frameLimiter != null) {
-                    frameLimiter.sleepFixed();
-                }
-            
-                if (softResetRequest) {
-                    softResetRequest = false;
-                    _softReset();
-                    runEmulation = true;
-                } else if (hardResetRequest) {
-                    hardResetRequest = false;
-                    _hardReset();
-                    runEmulation = true;
-                }
-                
-                if (audio != null) {
-                    audio.pause();
-                }
-            }  
-        }  
+            }
+        } finally {
+            lock.unlock();
+        }
     }
     
     public void setGUI(GUIImpl gui) {
@@ -242,8 +250,19 @@ public class NES extends Thread {
         ppu.setupPalette(PaletteGenerator.generattePalette());
     }
     
-    public synchronized void loadROM(final String filename) {
+    private void loadROM(final String filename) {
         runEmulation = false;
+        coreEnabled = false;
+        interrupt();
+        
+        while (lock.isLocked()) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ex) {
+                messageBox(ex.getMessage());
+            }
+        }
+        
         if (Tools.exists(filename) && (Tools.getExtension(filename).equalsIgnoreCase(".nes"))) {
             if (apu != null) {
                 //if rom already running save its sram before closing
@@ -272,7 +291,9 @@ public class NES extends Thread {
                 curRomPath = filename;
                 curRomName = Tools.getFilenamefromPath(filename);
                 runEmulation = true;
-            }    
+            }
+            
+            coreEnabled = true;
         } else {
             gui.messageBox("Could not load file:\nFile " + filename + "\n"
                     + "does not exist or is not a valid NES game.");

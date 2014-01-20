@@ -85,7 +85,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
         
         screenScaleFactor = PrefsSingleton.get().getInt("screenScaling", 2);
         bilinearFiltering = PrefsSingleton.get().getBoolean("bilinearFiltering", false);
-        renderer = new RGBRenderer();
+        renderer = new Renderer();
         
         // Create canvas for painting
         canvas = new Canvas();
@@ -333,7 +333,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
         buffer.show();
     }
     
-    public void toggleFullScreen() {
+    public synchronized void toggleFullScreen() {
         if (inFullScreen) {
             this.dispose();
             gd.setFullScreenWindow(null);
@@ -341,7 +341,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
             this.setUndecorated(false);
             this.setVisible(true);
             inFullScreen = false;
-            this.setJMenuBar(menus);
+            buildMenus();
         } else {
             setJMenuBar(null);
             gd = getGraphicsConfiguration().getDevice();

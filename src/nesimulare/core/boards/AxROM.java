@@ -39,9 +39,9 @@ public class AxROM extends Board {
     @Override
     public void writePRG(int address, int data) {
         if (Tools.getbit(data, 4)) {
-            nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENA);
-        } else {
             nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENB);
+        } else {
+            nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENA);
         }
         
         super.switch32kPRGbank(data & 0xF);
