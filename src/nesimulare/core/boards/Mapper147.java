@@ -21,20 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package nesimulare.core.boards;
 
 /**
  *
  * @author Parseus
  */
-public class CNROM extends Board { 
-    public CNROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+public class Mapper147 extends Board {
+    public Mapper147(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
     @Override
+    public void writeEXP(int address, int data) {
+        if ((address & 0x103) == 0x102) {
+            super.switch32kPRGbank((data >> 6 & 0x2) | (data >> 2 & 0x1));
+            super.switch8kCHRbank(data >> 3);
+        }
+    }
+    
+    @Override
+    public void writeSRAM(int address, int data) {
+        if ((address & 0x103) == 0x102) {
+            super.switch32kPRGbank((data >> 6 & 0x2) | (data >> 2 & 0x1));
+            super.switch8kCHRbank(data >> 3);
+        }
+    }
+    
+    @Override
     public void writePRG(int address, int data) {
-        super.switch8kCHRbank(getBusData(address, data));
+        if ((address & 0x103) == 0x102) {
+            super.switch32kPRGbank((data >> 6 & 0x2) | (data >> 2 & 0x1));
+            super.switch8kCHRbank(data >> 3);
+        }
     }
 }

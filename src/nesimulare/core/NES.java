@@ -113,6 +113,7 @@ public class NES extends Thread {
         //set thread priority higher than the interface thread
         curRomPath = romtoload;
         loadROM(romtoload);
+        
         new Thread(this).start();
     }
     

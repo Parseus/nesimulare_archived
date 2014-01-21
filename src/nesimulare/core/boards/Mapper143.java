@@ -21,20 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package nesimulare.core.boards;
 
 /**
  *
  * @author Parseus
  */
-public class CNROM extends Board { 
-    public CNROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+public class Mapper143 extends Board {
+    public Mapper143(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
     @Override
-    public void writePRG(int address, int data) {
-        super.switch8kCHRbank(getBusData(address, data));
+    public int readEXP(int address) {
+        return (0x40 | (~address & 0x3F)) & 0xFF;
     }
 }

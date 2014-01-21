@@ -26,16 +26,13 @@ package nesimulare.core.input;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.prefs.Preferences;
 import nesimulare.gui.PrefsSingleton;
-
-import net.java.games.input.*;
 import nesimulare.gui.Tools;
+import net.java.games.input.*;
 
 /**
  *
@@ -49,6 +46,7 @@ public class Joypad extends java.awt.Component implements KeyListener {
     private Component[] buttons;
     private final ScheduledExecutorService thread = Executors.newSingleThreadScheduledExecutor();
     private int latchbyte = 0, controllerbyte = 0, prevbyte = 0, outbyte = 0, gamepadbyte = 0;
+    private static final double threshold = 0.25;
     private final HashMap<Integer, Integer> m = new HashMap<>(10);
     private final int controllerNumber;
 
@@ -70,16 +68,19 @@ public class Joypad extends java.awt.Component implements KeyListener {
         //enable the byte of whatever is found
         prevbyte = controllerbyte;
         final int kepressed = arg0.getKeyCode();
+        
         if (!m.containsKey(kepressed)) {
             return;
         }
         //enable the corresponding bit to the key
         controllerbyte |= m.get(kepressed);
+        
         //special case: if up and down are pressed at once, use whichever was pressed previously
         if (Tools.getbit(controllerbyte, 4) && Tools.getbit(controllerbyte, 5)) {
             controllerbyte &= ~(Tools.BIT4 | Tools.BIT5);
             controllerbyte |= (prevbyte & ~(Tools.BIT4 | Tools.BIT5));
         }
+        
         //same for left and right
         if (Tools.getbit(controllerbyte, 6) && Tools.getbit(controllerbyte, 7)) {
             controllerbyte &= ~(Tools.BIT6 | Tools.BIT7);
@@ -92,9 +93,11 @@ public class Joypad extends java.awt.Component implements KeyListener {
     public void keyReleased(final KeyEvent arg0) {
         prevbyte = controllerbyte;
         final int kepressed = arg0.getKeyCode();
+        
         if (!m.containsKey(kepressed)) {
             return;
         }
+        
         controllerbyte &= ~m.get(kepressed);
     }
 
@@ -125,25 +128,25 @@ public class Joypad extends java.awt.Component implements KeyListener {
     public void startEventQueue() {
         thread.execute(eventQueueLoop());
     }
-    double threshold = 0.25;
 
     private Runnable eventQueueLoop() {
         return new Runnable() {
-
             @Override
             public void run() {
                 if (gameController != null) {
                     Event event = new Event();
+                    
                     while (!Thread.interrupted()) {
                         gameController.poll();
                         EventQueue queue = gameController.getEventQueue();
+                        
                         while (queue.getNextEvent(event)) {
                             Component component = event.getComponent();
+                            
                             if (component.getIdentifier() == Component.Identifier.Axis.X) {
                                 if (event.getValue() > threshold) {
                                     gamepadbyte |= Tools.BIT7;//left on, right off
                                     gamepadbyte &= ~Tools.BIT6;
-
                                 } else if (event.getValue() < -threshold) {
                                     gamepadbyte |= Tools.BIT6;
                                     gamepadbyte &= ~Tools.BIT7;
@@ -186,7 +189,6 @@ public class Joypad extends java.awt.Component implements KeyListener {
                                 }
                             }
                         }
-
 
                         try {
                             Thread.sleep(5);
@@ -233,6 +235,7 @@ public class Joypad extends java.awt.Component implements KeyListener {
                 int nbOfAxis = 0;
                 // Get this controllers components (buttons and axis)
                 Component[] components = controller.getComponents();
+                
                 // Check the availability of X/Y axis and at least 2 buttons
                 // (for A and B, because select and start can use the keyboard)
                 for (Component component : components) {
@@ -241,12 +244,14 @@ public class Joypad extends java.awt.Component implements KeyListener {
                         nbOfAxis++;
                     }
                 }
+                
                 if ((nbOfAxis >= 2) && (getButtons(controller).length >= 2)) {
                     // Valid game controller
                     gameControllers.add(controller);
                 }
             }
         }
+        
         return gameControllers.toArray(new Controller[0]);
     }
 
@@ -260,11 +265,13 @@ public class Joypad extends java.awt.Component implements KeyListener {
         List<Component> buttons = new ArrayList<>();
         // Get this controllers components (buttons and axis)
         Component[] components = controller.getComponents();
+        
         for (Component component : components) {
             if (component.getIdentifier() instanceof Component.Identifier.Button) {
                 buttons.add(component);
             }
         }
+        
         return buttons.toArray(new Component[0]);
     }
     
@@ -274,6 +281,7 @@ public class Joypad extends java.awt.Component implements KeyListener {
         
         //reset the buttons from prefs
         m.clear();
+        
         switch (controllerNumber) {
             case 1:
             default:
@@ -298,7 +306,9 @@ public class Joypad extends java.awt.Component implements KeyListener {
                 break;
 
         }
+        
         Controller[] controllers = getAvailablePadControllers();
+        
         if (controllers.length > controllerNumber) {
             this.gameController = controllers[controllerNumber];
             PrefsSingleton.get().put("controller" + controllerNumber, gameController.getName());

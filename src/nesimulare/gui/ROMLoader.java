@@ -30,7 +30,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import nesimulare.core.Region;
 import nesimulare.core.boards.*;
-import nesimulare.core.boards.SxROM.SOROM;
+import nesimulare.core.boards.SNROM.SOROM;
+import nesimulare.core.boards.SNROM.SUROM;
 import nesimulare.core.memory.PPUMemory;
 
 public class ROMLoader {
@@ -219,10 +220,12 @@ public class ROMLoader {
             case 0:
                 return new NROM(prgrom, chrrom, trainer, haschrram);
             case 1:
-                if (header[4] < 16) {
-                    return new SxROM(prgrom, chrrom, trainer, haschrram);
+                if (header[4] >= 32) {
+                    return new SUROM(prgrom, chrrom, trainer, haschrram);
                 } else if (header[4] >= 16) {
                     return new SOROM(prgrom, chrrom, trainer, haschrram);
+                } else if (header[4] < 16) {
+                    return new SNROM(prgrom, chrrom, trainer, haschrram);
                 }
             case 2:
                 return new UxROM(prgrom, chrrom, trainer, haschrram);
@@ -304,6 +307,9 @@ public class ROMLoader {
                 return new IREM_74_161_161_21_138(prgrom, chrrom, trainer, haschrram);
             case 78:
                 return new Jaleco_JF_16(prgrom, chrrom, trainer, haschrram);
+            case 79:
+            case 113:
+                return new AVE_NINA_03_06(prgrom, chrrom, trainer, haschrram);
             case 80:
                 return new Taito_X1_005(prgrom, chrrom, trainer, haschrram);
             case 82:
@@ -330,12 +336,24 @@ public class ROMLoader {
                 return new BANDAI_74_161_02_74(prgrom, chrrom, trainer, haschrram);
             case 97:
                 return new Irem_TAM_S1(prgrom, chrrom, trainer, haschrram);
+            case 112:
+                return new Mapper112(prgrom, chrrom, trainer, haschrram);
             case 118:
                 return new TxSROM(prgrom, chrrom, trainer, haschrram);
             case 119:
                 return new TQROM(prgrom, chrrom, trainer, haschrram);
+            case 133:
+                return new Mapper133(prgrom, chrrom, trainer, haschrram);
             case 140:
                 return new Jaleco_JF_11_14(prgrom, chrrom, trainer, haschrram);
+            case 143:
+                return new Mapper143(prgrom, chrrom, trainer, haschrram);
+            case 145:
+                return new Mapper145(prgrom, chrrom, trainer, haschrram);
+            case 146:
+                return new Mapper146(prgrom, chrrom, trainer, haschrram);
+            case 147:
+                return new Mapper147(prgrom, chrrom, trainer, haschrram);
             case 152:
                 return new TAITO_74_161_161_32(prgrom, chrrom, trainer, haschrram);
             case 154:
@@ -372,8 +390,14 @@ public class ROMLoader {
                 return new CamericaQuattro(prgrom, chrrom, trainer, haschrram);
             case 240:
                 return new Mapper240(prgrom, chrrom, trainer, haschrram);
+            case 241:
+                return new Mapper241(prgrom, chrrom, trainer, haschrram);
             case 242:
                 return new Mapper242(prgrom, chrrom, trainer, haschrram);
+            case 243:
+                return new Mapper243(prgrom, chrrom, trainer, haschrram);
+            case 245:
+                return new Mapper245(prgrom, chrrom, trainer, haschrram);
             case 246:
                 return new Mapper246(prgrom, chrrom, trainer, haschrram);
             case 255:

@@ -85,10 +85,11 @@ public class CPUMemory extends Memory  {
     @Override
     public final void hardReset() {
         wram = new int[2048];
-        Arrays.fill(wram, 0x00);
-        wram[0x0008] = 0xF7;
-        wram[0x0009] = 0xEF;
-        wram[0x000A] = 0xDF;
-        wram[0x000F] = 0xBF;
+        
+        for (int i = 0; i < 0x800; i++) {
+            if ((i & 4) != 0) {
+                wram[i] = 0xFF;
+            }
+        }
     }
 }

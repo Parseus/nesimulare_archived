@@ -21,20 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package nesimulare.core.boards;
+
+import nesimulare.core.memory.PPUMemory;
+import nesimulare.gui.Tools;
 
 /**
  *
  * @author Parseus
  */
-public class CNROM extends Board { 
-    public CNROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+public class AVE_NINA_03_06 extends Board {
+    private boolean mirroring = false;
+    
+    public AVE_NINA_03_06(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
     @Override
-    public void writePRG(int address, int data) {
-        super.switch8kCHRbank(getBusData(address, data));
+    public void initialize() {
+        super.initialize();
+        
+        mirroring = (nes.loader.mappertype == 113);
+    }
+    
+    @Override
+    public void writeEXP(int address, int data) {
+        if ((address & 0x4100) == 0x4100) {
+            super.switch32kPRGbank((data & 0x38) >> 3);
+            super.switch8kCHRbank((data & 0x7) | ((data & 0x40) >> 3));
+            
+            if (mirroring) {
+                nes.ppuram.setMirroring(Tools.getbit(data, 7) ? PPUMemory.Mirroring.VERTICAL : PPUMemory.Mirroring.HORIZONTAL);
+            }
+        }
     }
 }
