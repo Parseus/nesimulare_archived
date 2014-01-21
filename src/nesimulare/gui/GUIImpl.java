@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2013 Parseus.
+ * Copyright 2013-2014 Parseus.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -386,6 +386,11 @@ public class GUIImpl extends JFrame implements GUIInterface {
         }
     }
     
+    private void showAboutDialog() {
+        final AboutDialog about = new AboutDialog(this, true);
+        about.setVisible(true);
+    }
+    
     public boolean detectZapperLight() {
         final int x = (255 * (int)mousePoint.getX()) / screen.getWidth();
         final int y = (239 * (int)mousePoint.getY()) / screen.getHeight();
@@ -415,10 +420,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
                     nes.hardReset();
                     break;
                 case "About":
-                    messageBox("NESimulare (" + dateFormat.format(date) + ")"
-                            + "\n"
-                            + "This program is free software licensed under the MIT License and comes with \n"
-                            + "NO WARRANTY of any kind.");
+                    showAboutDialog();
                     break;
                 case "Open ROM":
                     loadROM();
