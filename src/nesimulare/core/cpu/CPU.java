@@ -38,7 +38,6 @@ import nesimulare.gui.Tools;
  * @author Parseus
  */
 public class CPU extends ProcessorBase implements Opcodes {
-
     NES nes;
     
     /* Process status register mnemonics */
@@ -338,18 +337,8 @@ public class CPU extends ProcessorBase implements Opcodes {
 
         // Fetch memory location for this instruction.
         state.ir = read(state.pc);
-        irAddressMode = instructionModes[state.ir];
-
-        // Increment PC
         incrementPC();
-
-        // Decode the instruction and datas
-        state.instSize = CPU.instructionSizes[state.ir];
-        for (int i = 0; i < state.instSize - 1; i++) {
-            state.args[i] = read(state.pc);
-            // Increment PC after reading
-            incrementPC();
-        }
+        irAddressMode = instructionModes[state.ir];
 
         // Increment step counter
         state.stepCounter++;
@@ -359,64 +348,86 @@ public class CPU extends ProcessorBase implements Opcodes {
 
         switch (irAddressMode) {
             case ABS_A:     // Absolute
+                state.args[0] = read(state.pc);
+                incrementPC();
+                state.args[1] = read(state.pc);
+                incrementPC();
                 effectiveAddress = address(state.args[0], state.args[1]);
                 break;
             case ABS_LC:    // Absolute with an additional read
+                state.args[0] = read(state.pc);
+                incrementPC();
                 checkInterrupts();
+                state.args[1] = read(state.pc);
+                incrementPC();
                 effectiveAddress = address(state.args[0], state.args[1]);
                 break;      
             case ABX_R:     // Absolute,X (dummy read - on carry)
-                lo = state.args[0];
-                hi = state.args[1];
-                inc = (lo + state.x) >= 0x100;
+                state.args[0] = read(state.pc);
+                incrementPC();
+                state.args[1] = read(state.pc);
+                incrementPC();
                 
-                if (inc) {
-                    read(xAddress(lo, hi));
-                    hi = (hi + 1) & 0xff;
+                state.args[0] = (state.args[0] + state.x) & 0xff;
+                
+                if (state.args[0] < state.x) {
+                    read(address(state.args[0], state.args[1]));
+                    state.args[1] = (state.args[1] + 1) & 0xff;
                 }
 
-                effectiveAddress = xAddress(lo, hi);
+                effectiveAddress = address(state.args[0], state.args[1]);
                 break;
             case ABX_W:     // Absolute,X (dummy read - always)
-                lo = state.args[0];
-                hi = state.args[1];
-                inc = (lo + state.x) >= 0x100;
-                read(xAddress(lo, hi));
+                state.args[0] = read(state.pc);
+                incrementPC();
+                state.args[1] = read(state.pc);
+                incrementPC();
                 
-                if (inc) {                 
-                    hi = (hi + 1) & 0xff;
+                state.args[0] = (state.args[0] + state.x) & 0xff;
+                
+                read(address(state.args[0], state.args[1]));
+                
+                if (state.args[0] < state.x) {
+                    state.args[1] = (state.args[1] + 1) & 0xff;
                 }
 
-                effectiveAddress = xAddress(lo, hi);
+                effectiveAddress = address(state.args[0], state.args[1]);
                 break;
             case ABY_R:     // Absolute,Y (dummy read - on carry)
-                lo = state.args[0];
-                hi = state.args[1];
-                inc = (lo + state.y) >= 0x100;
-                lo = (lo + state.y) & 0xff;
+                state.args[0] = read(state.pc);
+                incrementPC();
+                state.args[1] = read(state.pc);
+                incrementPC();
                 
-                if (inc) {
-                    read(address(lo, hi));
-                    hi = (hi + 1) & 0xff;
+                state.args[0] = (state.args[0] + state.y) & 0xff;
+                
+                if (state.args[0] < state.y) {
+                    read(address(state.args[0], state.args[1]));
+                    state.args[1] = (state.args[1] + 1) & 0xff;
                 }
 
-                effectiveAddress = address(lo, hi);
+                effectiveAddress = address(state.args[0], state.args[1]);
                 break;
             case ABY_W:     // Absolute,Y (dummy read - always)
-                lo = state.args[0];
-                hi = state.args[1];
-                inc = (lo + state.y) >= 0x100;
-                lo = (lo + state.y) & 0xff;
-                read(address(lo, hi));
+                state.args[0] = read(state.pc);
+                incrementPC();
+                state.args[1] = read(state.pc);
+                incrementPC();
                 
-                if (inc) {                 
-                    hi = (hi + 1) & 0xff;
+                state.args[0] = (state.args[0] + state.y) & 0xff;
+                
+                read(address(state.args[0], state.args[1]));
+                
+                if (state.args[0] < state.y) {
+                    state.args[1] = (state.args[1] + 1) & 0xff;
                 }
 
-                effectiveAddress = address(lo, hi);
+                effectiveAddress = address(state.args[0], state.args[1]);
                 break;
             case IMM_A:     // #Immediate
             case REL_A:     // Relative
+                state.args[0] = read(state.pc);
+                incrementPC();
                 break;
             case IMP_A:     // Implied
                 read(state.pc);
@@ -426,54 +437,77 @@ public class CPU extends ProcessorBase implements Opcodes {
                 read(state.pc);
                 break;
             case IND_A:     // Indirect (for buggy JMP)
+                state.args[0] = read(state.pc);
+                incrementPC();
+                state.args[1] = read(state.pc);
+                incrementPC();
                 checkInterrupts();
                 effectiveAddress = address(state.args[0], state.args[1]);
                 break;
             case INX_A:     // (Zero Page,X)
-                tmp = read(state.args[0]);
+                tmp = read(state.pc);
+                incrementPC();
                 tmp = (tmp + state.x) & 0xff;
                 
-                lo = read(tmp);
-                hi = read((tmp + 1) & 0xff);
+                dispatch();
                 
-                effectiveAddress = address(lo, hi);
+                state.args[0] = read(tmp);
+                tmp = (tmp + 1) & 0xff;
+                state.args[1] = read(tmp);
+                tmp = (tmp + 1) & 0xff;
+                
+                effectiveAddress = address(state.args[0], state.args[1]);
                 break;
             case INY_R:     // (Zero Page),Y (dummy read - on carry)
-                lo = read(state.args[0]);
-                hi = read((state.args[0] + 1) & 0xff);
-                inc = (lo + state.y) >= 0x100;
-                lo = (lo + state.y) & 0xff;
+                tmp = read(state.pc);
+                incrementPC();
+                state.args[0] = read(tmp);
+                tmp = (tmp + 1) & 0xff;
+                state.args[1] = read(tmp);
+                tmp = (tmp + 1) & 0xff;
                 
-                if (inc) {
-                    read(address(lo, hi));
-                    hi = (hi + 1) & 0xff;
+                state.args[0] = (state.args[0] + state.y) & 0xff;
+                
+                if (state.args[0] < state.y) {
+                    read(address(state.args[0], state.args[1]));
+                    state.args[1] = (state.args[1] + 1) & 0xff;
                 }
-                
-                effectiveAddress = address(lo, hi);
+
+                effectiveAddress = address(state.args[0], state.args[1]);
                 break;
             case INY_W:     // (Zero Page),Y (dummy read - always)
-                lo = read(state.args[0]);
-                hi = read((state.args[0] + 1) & 0xff);
-                inc = (lo + state.y) >= 0x100;
-                lo = (lo + state.y) & 0xff;
-                read(address(lo, hi));
+                tmp = read(state.pc);
+                incrementPC();
+                state.args[0] = read(tmp);
+                tmp = (tmp + 1) & 0xff;
+                state.args[1] = read(tmp);
+                tmp = (tmp + 1) & 0xff;
                 
-                if (inc) {
-                    hi = (hi + 1) & 0xff;
+                state.args[0] = (state.args[0] + state.y) & 0xff;
+                
+                read(address(state.args[0], state.args[1]));
+                
+                if (state.args[0] < state.y) {
+                    state.args[1] = (state.args[1] + 1) & 0xff;
                 }
-                
-                effectiveAddress = address(lo, hi);
+
+                effectiveAddress = address(state.args[0], state.args[1]);
                 break;
             case ZPG_A:     // Zero Page
-                effectiveAddress = state.args[0];
+                effectiveAddress = read(state.pc);
+                incrementPC();
                 break;
             case ZPX_A:     // Zero Page,X
+                effectiveAddress = read(state.pc);
+                incrementPC();
                 read(effectiveAddress);
-                effectiveAddress = zpxAddress(state.args[0]);
+                effectiveAddress = (effectiveAddress + state.x) & 0xff;
                 break;
             case ZPY_A:     // Zero Page,Y
+                effectiveAddress = read(state.pc);
+                incrementPC();
                 read(effectiveAddress);
-                effectiveAddress = zpyAddress(state.args[0]);
+                effectiveAddress = (effectiveAddress + state.y) & 0xff;
                 break;
             default:
                 break;

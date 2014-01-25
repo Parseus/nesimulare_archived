@@ -24,7 +24,7 @@
 
 package nesimulare.core.boards;
 
-import nesimulare.core.memory.PPUMemory.Mirroring;
+import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
@@ -70,7 +70,7 @@ public class SNROM extends Board {
             return sram[sramBank | (address & 0x1FFF)];
         }
         
-        return address >> 8;
+        return (address >> 8 & 0xe0);
     }
     
     @Override
@@ -114,16 +114,16 @@ public class SNROM extends Board {
             case 0:
                 switch (register[0] & 3) {
                     case 0:
-                        nes.ppuram.setMirroring(Mirroring.ONESCREENA);
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENA);
                         break;
                     case 1:
-                        nes.ppuram.setMirroring(Mirroring.ONESCREENB);
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENB);
                         break;
                     case 2:
-                        nes.ppuram.setMirroring(Mirroring.VERTICAL);
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.VERTICAL);
                         break;
                     case 3:
-                        nes.ppuram.setMirroring(Mirroring.HORIZONTAL);
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.HORIZONTAL);
                         break;
                     default:
                         break;
@@ -181,16 +181,16 @@ public class SNROM extends Board {
                 case 0:
                     switch (register[0] & 3) {
                         case 0:
-                            nes.ppuram.setMirroring(Mirroring.ONESCREENA);
+                            nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENA);
                             break;
                         case 1:
-                            nes.ppuram.setMirroring(Mirroring.ONESCREENB);
+                            nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENB);
                             break;
                         case 2:
-                            nes.ppuram.setMirroring(Mirroring.VERTICAL);
+                            nes.ppuram.setMirroring(PPUMemory.Mirroring.VERTICAL);
                             break;
                         case 3:
-                            nes.ppuram.setMirroring(Mirroring.HORIZONTAL);
+                            nes.ppuram.setMirroring(PPUMemory.Mirroring.HORIZONTAL);
                             break;
                         default:
                             break;
@@ -268,16 +268,16 @@ public class SNROM extends Board {
             if (reg == 0) {
                 switch (register[0] & 3) {
                     case 0:
-                        nes.ppuram.setMirroring(Mirroring.ONESCREENA);
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENA);
                         break;
                     case 1:
-                        nes.ppuram.setMirroring(Mirroring.ONESCREENB);
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENB);
                         break;
                     case 2:
-                        nes.ppuram.setMirroring(Mirroring.VERTICAL);
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.VERTICAL);
                         break;
                     case 3:
-                        nes.ppuram.setMirroring(Mirroring.HORIZONTAL);
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.HORIZONTAL);
                         break;
                     default:
                         break;

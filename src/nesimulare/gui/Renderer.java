@@ -33,6 +33,11 @@ import java.awt.image.WritableRaster;
  * @author Parseus
  */
 public class Renderer {
+    /**
+     * 
+     * @param nespixels
+     * @return 
+     */
     public BufferedImage render(int[][] nespixels) {
         final int colors[] = new int[240 * 256];
         
@@ -43,6 +48,15 @@ public class Renderer {
         return getImageFromArray(colors, 256 * 8, 256, 224);
     }
 
+    /**
+     * Converts an array with pixel values to <code>BufferedImage</code>.
+     * 
+     * @param bitmap
+     * @param offset
+     * @param width
+     * @param height
+     * @return 
+     */
     private static BufferedImage getImageFromArray(final int[] bitmap, final int offset, final int width, final int height) {
         final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB_PRE);
         final WritableRaster raster = image.getRaster();

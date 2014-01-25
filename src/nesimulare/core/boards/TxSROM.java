@@ -52,7 +52,7 @@ public class TxSROM extends TxROM {
             case 3:
                 return nes.ppuram.nmt[(chrRegister[chrMode ? 5 : 1] & 0x80) >> 7][(address & 0x03FF)];
             default:
-                return 0;
+                return (address >> 8 & 0xe0);
         }
     }
     

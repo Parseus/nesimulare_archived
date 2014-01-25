@@ -141,7 +141,7 @@ public class ExROM extends Board {
             if (exramMode >= 2) {
                 return nes.ppuram.nmt[2][address & 0x3FF];
             } else {
-                return address >> 8;
+                return (address >> 8 & 0xe0);
             }
         }
         

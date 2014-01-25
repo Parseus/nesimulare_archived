@@ -43,7 +43,7 @@ public class NES_ZZ extends TxROM {
     
     @Override
     public int readSRAM(int address) {
-        return address >> 8;
+        return (address >> 8 & 0xe0);
     }
     
     @Override

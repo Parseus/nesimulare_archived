@@ -235,7 +235,7 @@ public class Board {
     }
     
     public int readEXP(final int address) {
-        return address >> 8;
+        return (address >> 8 & 0xe0);
     }
     
     public int readPRG(final int address) {
@@ -262,6 +262,7 @@ public class Board {
      */
     public void writeSRAM(int address, int data) {
         sram[address & 0x1FFF] = data;
+        
         if (LOGGING) {
             int c, addr = 0x6004;
             final StringBuilder testResults = new StringBuilder();
@@ -290,7 +291,7 @@ public class Board {
     }
     
     public int readNametable(int address) {
-        return address >> 8;
+        return (address >> 8 & 0xe0);
     }
     
     public void writeNametable(final int address, final int data) {

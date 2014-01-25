@@ -85,7 +85,7 @@ public class TxROM extends Board{
             return super.readSRAM(address);
         }
         
-        return 0;
+        return (address >> 8 & 0xe0);
     }
     
     @Override
@@ -158,11 +158,13 @@ public class TxROM extends Board{
                 if (irqCounter == 0 || irqClear) {
                     irqCounter = irqReload;
                 } else {
-                    irqCounter = (irqCounter - 1) & 0xFF;
+                    irqCounter--;
                 }
                 
-                if ((oldCounter != 0 || irqClear) && (irqCounter == 0) && irqEnable) {
-                    nes.cpu.interrupt(CPU.InterruptTypes.BOARD, true);
+                if (irqCounter == 0) {
+                    if (oldCounter != 0 || irqClear) {
+                        nes.cpu.interrupt(CPU.InterruptTypes.BOARD, true);
+                    }
                 }
                 
                 irqClear = false;

@@ -24,24 +24,43 @@
 
 package nesimulare.core.memory;
 
-import java.util.Arrays;
 import nesimulare.core.NES;
 
+/**
+ * Class representing memory accessed by CPU.
+ * 
+ * @author Parseus
+ */
 public class CPUMemory extends Memory  {
     public NES nes;
     
     private int[] wram = new int[2048];
     
+    /**
+     * Constructor for this class.
+     * 
+     * @param nes       Emulation core
+     */
     public CPUMemory(NES nes) {
         super(0x10000);
         this.nes = nes;
     }
     
+    /**
+     * Initializes memory.
+     */
     @Override
     public void initialize() {
         hardReset();
     }
     
+    /**
+     * Reads data from an internal WRAM or other components of the NES.
+     * If (for some reason) address goes out of range, an open bus is returned.
+     * 
+     * @param address       Address to read data from
+     * @return              Read data
+     */
     @Override
     public int read(final int address) {  
         if (address >= 0x8000) {
@@ -59,10 +78,16 @@ public class CPUMemory extends Memory  {
         } else if (address < 0x8000) {
             return nes.board.readSRAM(address);
         } else {
-            return address >> 8;        //Open bus
+            return (address >> 8 & 0xe0);        //Open bus
         }
     }
     
+    /**
+     * Writes data to an internal WRAM or other components of the NES.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void write(final int address, final int data) {
         if (address < 0x0800) {
@@ -82,6 +107,10 @@ public class CPUMemory extends Memory  {
         }
     }
     
+    /**
+     * Performs a hard reset of the CPU memory.
+     * Initializes WRAM with arbitrary values.
+     */
     @Override
     public final void hardReset() {
         wram = new int[2048];

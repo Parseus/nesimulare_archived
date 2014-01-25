@@ -54,7 +54,7 @@ public final class PPUMemory extends Memory {
         super.initialize();
         
         hardReset();
-        final int mapper = nes.getLoader().mappertype;
+        final int mapper = nes.getLoader().mapperNumber;
         board = (mapper == 5 || mapper == 19 || mapper == 68 || mapper == 90 || mapper == 95 || mapper == 118 || mapper == 207);
     }
     
@@ -70,7 +70,7 @@ public final class PPUMemory extends Memory {
             return readPalette(addr);
         } else {
             //Open bus
-            return addr >> 8;
+            return (addr >> 8 & 0xE0);
         }
     }
     

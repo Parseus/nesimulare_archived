@@ -83,7 +83,7 @@ public class Namco163 extends Board {
             case 0x5800:
                 return ((irqCounter & 0x7F00) >> 8) & 0xFF;
             default:
-                return address >> 8;
+                return (address >> 8 & 0xe0);
         }
     }
     

@@ -62,7 +62,7 @@ public class JalecoSS88006 extends Board {
             return super.readSRAM(address);
         }
         
-        return 0;
+        return (address >> 8 & 0xe0);
     }
     
     @Override

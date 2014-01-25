@@ -82,7 +82,7 @@ public class Namco3425 extends Board {
             case 3:
                 return nes.ppuram.nmt[(chrRegister[chrMode ? 5 : 1] & 0x20) >> 5][(address & 0x03FF)];
             default:
-                return address >> 8;
+                return (address >> 8 & 0xe0);
         }
     }
     

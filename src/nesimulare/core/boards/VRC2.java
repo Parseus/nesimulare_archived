@@ -42,7 +42,7 @@ public class VRC2 extends Board {
     public void initialize() {
         super.initialize();
         
-        vrc2a = (nes.loader.mappertype == 22);
+        vrc2a = (nes.loader.mapperNumber == 22);
     }
     
     @Override

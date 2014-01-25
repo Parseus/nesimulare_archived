@@ -46,12 +46,12 @@ public class Controllers {
         switch (address) {
             case 0x4016:
                 joypad1.strobe();
-                data = joypad1.getbyte() | 0x40;
+                data = joypad1.getbyte() | (address >> 8 & 0xE0);
                 return data;
                 
             case 0x4017:
                 joypad2.strobe();
-                data = joypad2.getbyte() | 0x40;
+                data = joypad2.getbyte() | (address >> 8 & 0xE0);
                 
                 if (zapperConnected) {
                     data |= zapper.getTrigger() ? 0x08 : 0x00;

@@ -30,29 +30,39 @@ import nesimulare.gui.Tools;
  *
  * @author Parseus
  */
-public class AVE_NINA_03_06 extends Board {
-    private boolean mirroring = false;
+public class MLT_Caltron extends Board {
+    private int chrBank = 0;
+    private boolean innerBankSelect = true;
     
-    public AVE_NINA_03_06(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+    public MLT_Caltron(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
     @Override
-    public void initialize() {
-        super.initialize();
+    public void hardReset() {
+        super.hardReset();
         
-        mirroring = (nes.loader.mapperNumber == 113);
+        chrBank = 0;
+        innerBankSelect = true;
     }
     
     @Override
-    public void writeEXP(int address, int data) {
-        if ((address & 0x4100) == 0x4100) {
-            super.switch32kPRGbank((data & 0x38) >> 3);
-            super.switch8kCHRbank((data & 0x7) | ((data & 0x40) >> 3));
-            
-            if (mirroring) {
-                nes.ppuram.setMirroring(Tools.getbit(data, 7) ? PPUMemory.Mirroring.VERTICAL : PPUMemory.Mirroring.HORIZONTAL);
-            }
+    public void writeSRAM(int address, int data) {
+        if (address <= 0x67FF) {
+            nes.ppuram.setMirroring(Tools.getbit(address, 5) ? PPUMemory.Mirroring.HORIZONTAL : PPUMemory.Mirroring.VERTICAL);
+            innerBankSelect = Tools.getbit(address, 2);
+            chrBank = (chrBank & 3) | ((address >> 1) & 0xC);     
+        
+            super.switch32kPRGbank(address & 0x7);
+            super.switch8kCHRbank(chrBank);
+        }
+    }
+    
+    @Override
+    public void writePRG(int address, int data) {
+        if (innerBankSelect) {
+            chrBank = (chrBank & 0xC) | (data & 0x3);
+            super.switch8kCHRbank(chrBank);
         }
     }
 }

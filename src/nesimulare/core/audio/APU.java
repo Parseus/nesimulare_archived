@@ -239,7 +239,7 @@ public class APU extends ProcessorBase {
                 break;
                 
             default:
-                result = address >> 8;
+                result = (address >> 8 & 0xe0);
                 break;
         }
         

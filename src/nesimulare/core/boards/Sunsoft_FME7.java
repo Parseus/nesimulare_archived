@@ -82,7 +82,7 @@ public class Sunsoft_FME7 extends Board {
             return prg[(sramAddress << 13) | (address & 0x1FFF)];
         }
         
-        return 0;
+        return (address >> 8 & 0xe0);
     }
     
     @Override

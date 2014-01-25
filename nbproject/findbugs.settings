@@ -1,5 +1,5 @@
 #FindBugs User Preferences
-#Wed Dec 04 14:16:44 CET 2013
+#Sat Jan 25 15:48:25 CET 2014
 detectorAbnormalFinallyBlockReturn=AbnormalFinallyBlockReturn|false
 detectorAbstractClassEmptyMethods=AbstractClassEmptyMethods|false
 detectorAbstractOverriddenMethod=AbstractOverriddenMethod|false
@@ -174,7 +174,7 @@ detectorPreferZeroLengthArrays=PreferZeroLengthArrays|true
 detectorPublicSemaphores=PublicSemaphores|false
 detectorQuestionableBooleanAssignment=QuestionableBooleanAssignment|true
 detectorReadOfInstanceFieldInMethodInvokedByConstructorInSuperclass=ReadOfInstanceFieldInMethodInvokedByConstructorInSuperclass|true
-detectorReadReturnShouldBeChecked=ReadReturnShouldBeChecked|true
+detectorReadReturnShouldBeChecked=ReadReturnShouldBeChecked|false
 detectorRedundantInterfaces=RedundantInterfaces|true
 detectorReflectiveClasses=ReflectiveClasses|true
 detectorRepeatedConditionals=RepeatedConditionals|true

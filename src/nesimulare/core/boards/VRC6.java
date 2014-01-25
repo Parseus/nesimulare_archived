@@ -53,7 +53,7 @@ public class VRC6 extends Board {
         
         soundChip = new VRC6SoundChip(nes.region);
         nes.apu.addExpansionSoundChip(soundChip);
-        vrc6a = (nes.loader.mappertype == 24);
+        vrc6a = (nes.loader.mapperNumber == 24);
     }
     
     @Override

@@ -50,7 +50,7 @@ public class Taito_TC0190FMC extends Board {
     public void initialize() {
         super.initialize();
         
-        pal16r4 = (nes.loader.mappertype == 48);
+        pal16r4 = (nes.loader.mapperNumber == 48);
     }
     
     @Override

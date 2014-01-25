@@ -37,7 +37,7 @@ import nesimulare.core.memory.PPUMemory;
 public class ROMLoader {
     private final GUIImpl gui;
     public Board board;
-    private final String name;
+    private final String filename;
     private final int[] rom;
     private int[] header;
     public String sha1;
@@ -50,7 +50,7 @@ public class ROMLoader {
     private int chrOffset;
     
     public PPUMemory.Mirroring mirroring;
-    public int mappertype;
+    public int mapperNumber;
     public int submapper;
     private int tvmode;
     private int vssystem;
@@ -62,7 +62,7 @@ public class ROMLoader {
     public ROMLoader(String filename, GUIImpl gui) {
         this.gui = gui;
         rom = Tools.readfromfile(filename);
-        name = filename;
+        this.filename = filename;
         sha1 = calculateHash(filename);
     }
     
@@ -84,6 +84,7 @@ public class ROMLoader {
             }
             
             gui.messageBox("Invalid iNES header!");
+            return;
         }
         
         if (header[11] + header[12] + header[13] + header[14] + header[15] != 0) {
@@ -94,19 +95,31 @@ public class ROMLoader {
         prgromSize = 16384 * header[4];
         chrromSize = 8192 * header[5];
         hasTrainer = Tools.getbit(header[6], 2);
-        mappertype = ((header[6] & 0xF0) >> 4) | (header[7] & 0xF0);
+        mapperNumber = ((header[6] & 0xF0) >> 4) | (header[7] & 0xF0);
         
         savesram = Tools.getbit(header[6], 1);
-        mirroring = Tools.getbit(header[6], 3) ? PPUMemory.Mirroring.FOURSCREEN : 
-                (Tools.getbit(header[6], 0) ? PPUMemory.Mirroring.VERTICAL : PPUMemory.Mirroring.HORIZONTAL);
         
-        prgramSize = header[8] == 0 ? 8192 : 8192 * header[8];
+        switch (header[6] & 0x9) {
+            case 0x0:
+                mirroring = PPUMemory.Mirroring.HORIZONTAL;
+                break;
+            case 0x1:
+                mirroring = PPUMemory.Mirroring.VERTICAL;
+                break;
+            case 0x8: case 0x9:
+                mirroring = PPUMemory.Mirroring.FOURSCREEN;
+                break;
+            default:
+                break;
+        }
+        
+        prgramSize = (header[8] == 0) ? 8192 : 8192 * header[8];
         
         if ((header[7] & 0x0C) == 0x08) {
             //iNES 2.0
             inesVersion = 2;
             
-            mappertype |= (header[8] & 0x0F) << 8;
+            mapperNumber |= (header[8] & 0x0F) << 8;
             submapper = (header[8] & 0xF0) << 4;
             prgromSize |= (header[9] & 0x0F) << 8;
             chrromSize |= (header[9] & 0xF0) << 4;
@@ -160,17 +173,17 @@ public class ROMLoader {
     public final String calculateHash(String fileName) {
         try {
             final MessageDigest md = MessageDigest.getInstance("SHA1");
-            final FileInputStream fis = new FileInputStream(fileName);
-            fis.skip(16);
-            final byte[] dataBytes = new byte[1024];
             
-            int nread;
-            
-            while ((nread = fis.read(dataBytes)) != -1) {
-                md.update(dataBytes, 0, nread);
+            try (FileInputStream fis = new FileInputStream(fileName)) {
+                fis.skip(16);
+                final byte[] dataBytes = new byte[1024];
+                
+                int nread;
+                
+                while ((nread = fis.read(dataBytes)) != -1) {
+                    md.update(dataBytes, 0, nread);
+                }
             }
-            
-            fis.close();
             
             final byte[] mdbytes = md.digest();
             final StringBuilder sb = new StringBuilder("");
@@ -192,7 +205,7 @@ public class ROMLoader {
         
         if (haschrram) {
             if (chrramSize == 0) {
-                chrromSize = 0x2000;
+                chrromSize = 0x10000;
             } else {
                 chrromSize = chrramSize;
             }
@@ -216,7 +229,7 @@ public class ROMLoader {
             }
         }
 
-        switch (mappertype) {
+        switch (mapperNumber) {
             case 0:
                 return new NROM(prgrom, chrrom, trainer, haschrram);
             case 1:
@@ -248,6 +261,8 @@ public class ROMLoader {
             case 15:
             case 169:
                 return new Mapper015(prgrom, chrrom, trainer, haschrram);
+            case 16:
+                return new Bandai_FCG(prgrom, chrrom, trainer, haschrram);
             case 18:
                 return new JalecoSS88006(prgrom, chrrom, trainer, haschrram);
             case 19:
@@ -271,6 +286,8 @@ public class ROMLoader {
                 }
             case 37:
                 return new NES_ZZ(prgrom, chrrom, trainer, haschrram);
+            case 41:
+                return new MLT_Caltron(prgrom, chrrom, trainer, haschrram);
             case 46:
                 return new Mapper046(prgrom, chrrom, trainer, haschrram);
             case 47:
@@ -336,6 +353,8 @@ public class ROMLoader {
                 return new BANDAI_74_161_02_74(prgrom, chrrom, trainer, haschrram);
             case 97:
                 return new Irem_TAM_S1(prgrom, chrrom, trainer, haschrram);
+            case 105:
+                return new NES_EVENT(prgrom, chrrom, trainer, haschrram);
             case 112:
                 return new Mapper112(prgrom, chrrom, trainer, haschrram);
             case 118:
@@ -356,18 +375,28 @@ public class ROMLoader {
                 return new Mapper147(prgrom, chrrom, trainer, haschrram);
             case 152:
                 return new TAITO_74_161_161_32(prgrom, chrrom, trainer, haschrram);
+            case 153:
+                return new Mapper153(prgrom, chrrom, trainer, haschrram);
             case 154:
                 return new Namco3453(prgrom, chrrom, trainer, haschrram);
+            case 159:
+                return new Mapper159(prgrom, chrrom, trainer, haschrram);
             case 174:
                 return new Mapper174(prgrom, chrrom, trainer, haschrram);
             case 180:
                 return new HVC_UNROM_74HC08(prgrom, chrrom, trainer, haschrram);
+            case 182:
+                return new Mapper182(prgrom, chrrom, trainer, haschrram);
             case 184:
                 return new Sunsoft1(prgrom, chrrom, trainer, haschrram);
             case 185:
                 return new Mapper185(prgrom, chrrom, trainer, haschrram);
             case 191:
                 return new Mapper191(prgrom, chrrom, trainer, haschrram);
+            case 193:
+                return new Mapper193(prgrom, chrrom, trainer, haschrram);
+            case 200:
+                return new Mapper200(prgrom, chrrom, trainer, haschrram);
             case 201:
                 return new Mapper201(prgrom, chrrom, trainer, haschrram);
             case 202:
@@ -382,8 +411,12 @@ public class ROMLoader {
                 return new Namco118(prgrom, chrrom, trainer, haschrram);
             case 207:
                 return new Mapper207(prgrom, chrrom, trainer, haschrram);
+            case 212:
+                return new Mapper212(prgrom, chrrom, trainer, haschrram);
             case 213:
                 return new Mapper213(prgrom, chrrom, trainer, haschrram);
+            case 214:
+                return new Mapper214(prgrom, chrrom, trainer, haschrram);
             case 228:
                 return new MLT_Action52(prgrom, chrrom, trainer, haschrram);
             case 232:
@@ -396,6 +429,8 @@ public class ROMLoader {
                 return new Mapper242(prgrom, chrrom, trainer, haschrram);
             case 243:
                 return new Mapper243(prgrom, chrrom, trainer, haschrram);
+            case 244:
+                return new Mapper244(prgrom, chrrom, trainer, haschrram);
             case 245:
                 return new Mapper245(prgrom, chrrom, trainer, haschrram);
             case 246:
@@ -403,7 +438,7 @@ public class ROMLoader {
             case 255:
                 return new Mapper255(prgrom, chrrom, trainer, haschrram);
             default:
-                gui.messageBox("Couldn't load the ROM file!\nUnsupported mapper: " + mappertype);
+                gui.messageBox("Couldn't load the ROM file!\nUnsupported mapper: " + mapperNumber);
                 return null;
         }
     }
@@ -427,8 +462,8 @@ public class ROMLoader {
     
     public String getrominfo() {
         return ("ROM info:\n"
-                + "Filename:     " + name + "\n"
-                + "Mapper:       " + mappertype + getBoardName() + "\n"
+                + "Filename:     " + filename + "\n"
+                + "Mapper:       " + mapperNumber + getBoardName() + "\n"
                 + "PRG-ROM Size:     " + prgromSize / 1024 + " kB\n"
                 + "CHR-ROM Size:     " + (haschrram ? 0 : chrromSize / 1024) + " kB\n"
                 + "Mirroring:    " + mirroring.toString() + "\n"

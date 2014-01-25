@@ -53,7 +53,7 @@ public class Taito_X1_005 extends Board {
             return sram[address & 0x7F];
         }
         
-        return address >> 8;
+        return (address >> 8 & 0xe0);
     }
     
     @Override

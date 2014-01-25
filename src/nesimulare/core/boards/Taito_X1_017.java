@@ -67,7 +67,7 @@ public class Taito_X1_017 extends Board{
             return super.readSRAM(address);
         }
         
-        return address >> 8;
+        return (address >> 8 & 0xe0);
     }
     
     @Override

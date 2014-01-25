@@ -56,7 +56,7 @@ public class Mapper207 extends Board {
             return sram[address & 0x7F];
         }
         
-        return address >> 8;
+        return (address >> 8 & 0xe0);
     }
     
     @Override
@@ -111,7 +111,7 @@ public class Mapper207 extends Board {
             case 2: case 3:
                 return nes.ppuram.nmt[mirroring2][address & 0x3FF];
             default:
-                return 0;
+                return (address >> 8 & 0xe0);
         }
     }
     
