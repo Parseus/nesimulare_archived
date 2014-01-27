@@ -35,7 +35,8 @@ public class NoiseChannel extends APUChannel {
     
     private int shiftRegister;
     private int volume;
-    private int envelopeCount, envelopeTimer, envelopeSpeed;
+    private int envelopeCount, envelopeTimer, envelopeSound;
+    private int envelopeDelay, envelopeVolume;
     private boolean modeFlag;
     private boolean envelopeEnabled, envelopeLoop, envelopeReload;
     
@@ -54,8 +55,8 @@ public class NoiseChannel extends APUChannel {
         super.hardReset();
 
         shiftRegister = 1;
-        volume = 0;
-        envelopeCount = envelopeTimer = envelopeSpeed = 0;
+        envelopeCount = envelopeTimer = envelopeSound = 0;
+        envelopeDelay = envelopeVolume = 0;
         modeFlag = false;
         envelopeEnabled = envelopeLoop = envelopeReload = false;
     }
@@ -71,8 +72,8 @@ public class NoiseChannel extends APUChannel {
                 lenctrHaltRequest = Tools.getbit(data, 5);
                 envelopeLoop = Tools.getbit(data, 5);
                 envelopeEnabled = Tools.getbit(data, 4);
-                envelopeSpeed = data & 0xF;
-                volume = envelopeEnabled ? envelopeSpeed : envelopeCount;
+                envelopeDelay = data & 0xF;
+                envelopeVolume = envelopeEnabled ? envelopeDelay : envelopeCount;
                 break;
               
             /**
@@ -115,12 +116,12 @@ public class NoiseChannel extends APUChannel {
         if (envelopeReload) {
             envelopeReload = false;
             envelopeCount = 0xF;
-            envelopeTimer = envelopeSpeed;
+            envelopeTimer = envelopeDelay;
         } else {
             if (envelopeTimer != 0) {
                 envelopeTimer--;
             } else {
-                envelopeTimer = envelopeSpeed;
+                envelopeTimer = envelopeDelay;
                 
                 if (envelopeLoop || envelopeCount != 0) {
                     envelopeCount = (envelopeCount - 1) & 0xF;
@@ -130,14 +131,18 @@ public class NoiseChannel extends APUChannel {
     }
     
     public void halfFrame() {
-        if (!lenctrHalt && lenctr > 0) {
-            lenctr = (lenctr - 1) & 0xFF;
+        if (!lenctrHalt) {
+            if (lenctr > 0) {
+                lenctr = (lenctr - 1) & 0xFF;
+            }
         }  
     }
     
     public final int getOutput() {
+        envelopeSound = envelopeEnabled ? envelopeVolume : envelopeCount;
+        
         if (lenctr > 0 && !Tools.getbit(shiftRegister, 0)) {
-            return volume;
+            return envelopeSound;
         }
         
         return 0;

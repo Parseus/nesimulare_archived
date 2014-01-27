@@ -228,6 +228,6 @@ public class DMCChannel extends APUChannel {
     }
     
     public final int getOutput() {
-        return output & 0xFF;
+        return output;
     }
 }

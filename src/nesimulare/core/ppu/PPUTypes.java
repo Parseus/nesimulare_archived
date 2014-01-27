@@ -52,7 +52,7 @@ public class PPUTypes {
             if ((address & 0x7000) != 0x7000) {
                 address += 0x1000;
             } else {
-                address ^= 0x7000;
+                address &= 0xFFF;
                 
                 switch (address & 0x3E0) {
                     case 0x3A0:

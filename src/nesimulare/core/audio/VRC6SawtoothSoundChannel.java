@@ -40,9 +40,7 @@ public class VRC6SawtoothSoundChannel extends APUChannel {
     public VRC6SawtoothSoundChannel(Region.System system) {
         super(system);
     }
-    
-    
-    
+
     @Override
     public void hardReset() {
         super.hardReset();
@@ -101,7 +99,7 @@ public class VRC6SawtoothSoundChannel extends APUChannel {
     }
     
     public final int getOutput() {
-        if (enabled && frequency > 0x4) {
+        if (enabled & frequency > 0x4) {
             return output;
         } else {
             return 0;

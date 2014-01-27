@@ -107,10 +107,12 @@ public class TriangleChannel extends APUChannel {
     
     @Override
     public void cycle() {
-        if (lenctr > 0 && counter > 0 && frequency < 4) {
-            step++;
-            step &= 0x1F;
-            output = stepSequence[step];
+        if (lenctr > 0 && counter > 0) {
+            if (frequency >= 4) {
+                step++;
+                step &= 0x1F;
+                output = stepSequence[step];
+            }
         }
     }
     
@@ -141,6 +143,6 @@ public class TriangleChannel extends APUChannel {
     }
     
     public final int getOutput() {
-        return output & 0xFF;
+        return output;
     }
 }

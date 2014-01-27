@@ -33,6 +33,7 @@ import nesimulare.gui.Tools;
 public class Namco163SoundChip implements ExpansionSoundChip {
     private final Namco163SoundChannel channels[];
     public int exram[] = new int[128];
+    private int lpaccum = 0;
     private int channelIndex = 0;
     public int enabledChannels = 0;
     private int soundRegister = 0;
@@ -42,6 +43,7 @@ public class Namco163SoundChip implements ExpansionSoundChip {
         exram = new int[128];
         channelIndex = 0;
         enabledChannels = 0;
+        lpaccum = 0;
         soundRegister = 0;
         
         for (int i = 0; i < 8; i++) {
@@ -127,21 +129,24 @@ public class Namco163SoundChip implements ExpansionSoundChip {
     }
     
     @Override
-    public short mix() {
-        short output = 0;
+    public int mix() {
+        int output = 0;
         
         int enabledTemp = enabledChannels + 1;
         
         for (int i = 7; i >= 0; i--) {
             if (enabledTemp > 0) {
                 enabledTemp--;
-                output += (short)(channels[i].getOutput());
+                output += channels[i].getOutput();
             } else {
                 break;
             }
         }
         
-        return output;
+        output += lpaccum;
+        lpaccum -= output * (1 / 16.);
+        
+        return lpaccum << 2;
     }
 
     @Override

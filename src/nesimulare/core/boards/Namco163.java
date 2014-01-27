@@ -202,7 +202,7 @@ public class Namco163 extends Board {
         final int addr = decodeCHRAddress(address);
         
         if (addr < chr.length) {
-            return chr[address];
+            return chr[addr];
         } else {
             return chrram[addr - chr.length];
         }

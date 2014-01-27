@@ -252,10 +252,6 @@ public class Tools {
         return ((value & (1 << bit)) != 0);
     }
     
-    public static int setbit(final int value, final int bit, final boolean state) {
-        return (state) ? (value | (1 << bit)) : (value & ~(1 << bit));
-    }
-    
     public static int[] reduce(int toReduce[]) {
         int gcf = gcf(toReduce[0], toReduce[1]);
         

@@ -21,66 +21,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package nesimulare.core.audio;
-
-import nesimulare.core.Region;
+package nesimulare.core.boards;
 
 /**
  *
  * @author Parseus
  */
-public class VRC6SoundChip implements ExpansionSoundChip {
-    public VRC6PulseSoundChannel pulse1, pulse2;
-    public VRC6SawtoothSoundChannel sawtooth;
-    
-    public VRC6SoundChip(Region.System system) {
-        pulse1 = new VRC6PulseSoundChannel(system);
-        pulse2 = new VRC6PulseSoundChannel(system);
-        sawtooth = new VRC6SawtoothSoundChannel(system);
-    }
-
-    @Override
-    public int mix() {
-        int output = 384 * pulse1.getOutput();
-        output += pulse2.getOutput();
-        output += (sawtooth.getOutput() >> 3);
-        
-        return output;
+public class Mapper189 extends TxROM {
+    public Mapper189(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
     }
 
     @Override
     public void hardReset() {
-        pulse1.hardReset();
-        pulse2.hardReset();
-        sawtooth.hardReset();
+        super.hardReset();
+        
+        super.switch32kPRGbank(0);
+    }
+    
+    @Override
+    public void writeEXP(int address, int data) {
+        if (address >= 0x4120) {
+            super.switch32kPRGbank((data >> 4) | data);
+        }
     }
 
     @Override
-    public void softReset() {
-        pulse1.softReset();
-        pulse2.softReset();
-        sawtooth.softReset();
+    public void writeSRAM(int address, int data) {
+        super.switch32kPRGbank((data >> 4) | data);
     }
 
     @Override
-    public void quarterFrame() {
-        //Nothing to see here, move along
+    public void writePRG(int address, int data) {
+        if (address == 0x8001) {
+            if (register <= 5) {
+                chrRegister[register] = data;
+                setupCHR();
+            }
+        } else {
+            super.writePRG(address, data);
+        }
     }
-
+    
     @Override
-    public void halfFrame() {
-        //Nothing to see here, move along
-    }
-
-    @Override
-    public void clockChannel(boolean clockingLength) {
-        //Nothing to see here, move along
-    }
-
-    @Override
-    public void cycle(int cycles) {
-        pulse1.cycle(cycles);
-        pulse2.cycle(cycles);
-        sawtooth.cycle(cycles);
+    protected void setupPRG() { 
+        //Override with an empty method
     }
 }

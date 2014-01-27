@@ -21,19 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package nesimulare.core.boards;
 
-package nesimulare.core.audio;
+import nesimulare.core.memory.PPUMemory;
+import nesimulare.gui.Tools;
 
 /**
  *
  * @author Parseus
  */
-public interface ExpansionSoundChip {
-    int mix();
-    void hardReset();
-    void softReset();
-    void quarterFrame();
-    void halfFrame();
-    void clockChannel(boolean clockingLength);
-    void cycle(int cycles);
+public class Mapper062 extends Board {
+    public Mapper062(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
+    }
+    
+    @Override
+    public void writePRG(int address, int data) {
+        int page = ((address & 0x3F00) >> 8) | (address & 0x40);
+        
+        if (Tools.getbit(address, 5)) {
+            super.switch16kPRGbank(page, 0x8000);
+            super.switch16kPRGbank(page, 0xC000);
+        } else {
+            super.switch32kPRGbank(page >> 1);
+        }
+        
+        page = ((address & 0x1F) << 2) | (data & 0x3);
+        super.switch8kCHRbank(page);
+        
+        nes.ppuram.setMirroring(Tools.getbit(address, 7) ? PPUMemory.Mirroring.HORIZONTAL : PPUMemory.Mirroring.VERTICAL);
+    }
 }

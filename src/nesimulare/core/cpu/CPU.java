@@ -103,9 +103,6 @@ public class CPU extends ProcessorBase implements Opcodes {
     public static int lastRead;
     private static int lastWrite;
     
-    /* Checks the proper offset for branches and some addressing modes */
-    private boolean inc;
-    
     /* DMA cycles */
     private int dmcDMACycles = 0;
     private int oamDMACycles = 0;
@@ -572,6 +569,7 @@ public class CPU extends ProcessorBase implements Opcodes {
                 setCarryFlag();
                 break;
             case 0x40: // RTI - ReTurn from Interrupt - Implied
+                dispatch();
                 setProcessorStatus(stackPop());
                 lo = stackPop();
                 checkInterrupts();
@@ -589,10 +587,12 @@ public class CPU extends ProcessorBase implements Opcodes {
                 clearIrqDisableFlag();
                 break;
             case 0x60: // RTS - ReTurn from Subroutine - Implied
+                dispatch();
                 lo = stackPop();
                 hi = stackPop();
                 setProgramCounter(address(lo, hi) + 1);
                 checkInterrupts();
+                dispatch();
                 break;
             case 0x68: // PLA - PuLl Accumulator - Implied
                 dispatch();
@@ -1345,6 +1345,7 @@ public class CPU extends ProcessorBase implements Opcodes {
      */
     private void branch(boolean flag) {
         checkInterrupts();
+        
    
         if (flag) {
             final int offset = state.args[0];
@@ -1729,37 +1730,6 @@ public class CPU extends ProcessorBase implements Opcodes {
     final int address(int lowByte, int hiByte) {
         return (lowByte | (hiByte << 8)) & 0xffff;
     }
-
-    /**
-     * Given a hi byte and a low byte, return the Absolute,X
-     * offset address.
-     */
-    final int xAddress(int lowByte, int hiByte) {
-        return (address((lowByte + state.x) & 0xff, hiByte)) & 0xffff;
-    }
-
-    /**
-     * Given a hi byte and a low byte, return the Absolute,Y
-     * offset address.
-     */
-    final int yAddress(int lowByte, int hiByte) {
-        return (address((lowByte + state.y) & 0xff, hiByte)) & 0xffff;
-    }
-
-    /**
-     * Given a single byte, compute the Zero Page,X offset address.
-     */
-    final int zpxAddress(int zp) {
-        return (zp + state.x) & 0xff;
-    }
-
-    /**
-     * Given a single byte, compute the Zero Page,Y offset address.
-     */
-    final int zpyAddress(int zp) {
-        return (zp + state.y) & 0xff;
-    }
-
 
     /**
      * A compact, struct-like representation of CPU state.

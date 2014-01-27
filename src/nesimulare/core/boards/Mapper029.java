@@ -1,4 +1,4 @@
-/*
+ /*
  * The MIT License
  *
  * Copyright 2013-2014 Parseus.
@@ -21,19 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-package nesimulare.core.audio;
+package nesimulare.core.boards;
 
 /**
  *
  * @author Parseus
  */
-public interface ExpansionSoundChip {
-    int mix();
-    void hardReset();
-    void softReset();
-    void quarterFrame();
-    void halfFrame();
-    void clockChannel(boolean clockingLength);
-    void cycle(int cycles);
+public class Mapper029 extends Board {
+    public Mapper029(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
+    }
+    
+    @Override
+    public void hardReset() {
+        super.hardReset();
+
+        super.switch16kPRGbank((prg.length - 0x2000) >> 13, 0xC000);
+    }
+    
+    @Override
+    public void writePRG(int address, int data) {
+        super.switch16kPRGbank((data >> 2) & 0x7, 0x8000);
+        super.switch8kCHRbank(data & 0x3);
+    }
 }

@@ -21,19 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-package nesimulare.core.audio;
+package nesimulare.core.boards;
 
 /**
  *
  * @author Parseus
  */
-public interface ExpansionSoundChip {
-    int mix();
-    void hardReset();
-    void softReset();
-    void quarterFrame();
-    void halfFrame();
-    void clockChannel(boolean clockingLength);
-    void cycle(int cycles);
+public class Mapper148 extends Board {
+    public Mapper148(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
+    }
+
+    @Override
+    public void writePRG(int address, int data) {
+        super.switch32kPRGbank(data >> 3);
+        super.switch8kCHRbank(data);
+    }
 }

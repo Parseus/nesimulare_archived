@@ -43,9 +43,9 @@ public class PulseChannel extends APUChannel {
     };
     
     private int output;
-    private int volume;
     private int dutyLength, dutyCycle;
-    private int envelopeCount, envelopeTimer, envelopeSpeed;
+    private int envelopeCount, envelopeTimer, envelopeSound;
+    private int envelopeDelay, envelopeVolume;
     private int sweepCount, sweepShift, sweepDividerPeriod;
     private boolean envelopeEnabled, envelopeLoop, envelopeReload;
     private boolean sweepEnabled, sweepReload, sweepNegateFlag;
@@ -65,10 +65,10 @@ public class PulseChannel extends APUChannel {
         super.hardReset();
         
         output = 0;
-        volume = 0;
-        envelopeCount = envelopeTimer = envelopeSpeed = 0;
+        envelopeCount = envelopeTimer = envelopeSound = 0;
         dutyLength = dutyCycle = 0;
         sweepCount = sweepShift = sweepDividerPeriod = 0;
+        envelopeDelay = envelopeVolume = 0;
         envelopeEnabled = envelopeLoop = envelopeReload = false;
         sweepEnabled = sweepReload = sweepNegateFlag = false;
     }
@@ -84,9 +84,9 @@ public class PulseChannel extends APUChannel {
                 lenctrHaltRequest = Tools.getbit(data, 5);
                 envelopeLoop = Tools.getbit(data, 5);
                 envelopeEnabled = Tools.getbit(data, 4);
-                envelopeSpeed = data & 0xF;
+                envelopeDelay = data & 0xF;
                 dutyLength = (data & 0xC0) >> 6;
-                volume = envelopeEnabled ? envelopeSpeed : envelopeCount;
+                envelopeVolume = envelopeEnabled ? envelopeDelay : envelopeCount;
                 break;
                 
             /**
@@ -132,10 +132,12 @@ public class PulseChannel extends APUChannel {
     
     @Override
     public void cycle() {
+        envelopeSound = envelopeEnabled ? envelopeVolume : envelopeCount;
+        
         dutyCycle = (dutyCycle + 1) & 7;
             
         if (lenctr > 0 && validFreq()) {
-            output = (dutySequences[dutyLength][dutyCycle] * volume) & 0xFF;
+            output = (dutySequences[dutyLength][dutyCycle] * envelopeSound) & 0xFF;
         } else {
             output = 0;
         }
@@ -153,12 +155,12 @@ public class PulseChannel extends APUChannel {
         if (envelopeReload) {
             envelopeReload = false;
             envelopeCount = 0xF;
-            envelopeTimer = envelopeSpeed;
+            envelopeTimer = envelopeDelay;
         } else {
             if (envelopeTimer != 0) {
                 envelopeTimer--;
             } else {
-                envelopeTimer = envelopeSpeed;
+                envelopeTimer = envelopeDelay;
                 
                 if (envelopeLoop || envelopeCount != 0) {
                     envelopeCount = (envelopeCount - 1) & 0xF;
@@ -171,8 +173,10 @@ public class PulseChannel extends APUChannel {
      * Clocks sweep.
      */
     public void halfFrame() {
-        if (!lenctrHalt && lenctr > 0) {
-            lenctr = (lenctr - 1) & 0xFF;
+        if (!lenctrHalt) {
+            if (lenctr > 0) {
+                lenctr = (lenctr - 1) & 0xFF;
+            }
         }
         
         if (--sweepCount == 0) {
@@ -198,7 +202,7 @@ public class PulseChannel extends APUChannel {
     
     public final int getOutput() {
         if (lenctr > 0 && validFreq()) {
-            return output = (dutySequences[dutyLength][dutyCycle] * volume) & 0xFF;
+            return output;
         } else {
             return output = 0;
         }

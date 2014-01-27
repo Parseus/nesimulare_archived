@@ -371,7 +371,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
             setRenderOptions();
             
             if (nes.apu != null) {
-                nes.apu.setupPlayback();
+                nes.setupPlayback();
             }
         }
     }

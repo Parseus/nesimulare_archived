@@ -39,10 +39,10 @@ public class Sunsoft5BSoundChip implements ExpansionSoundChip {
     }
     
     @Override
-    public short mix() {
-        short output = (short)square0.getOutput();
-        output += (short)square1.getOutput();
-        output += (short)square2.getOutput();
+    public int mix() {
+        int output = square0.getOutput();
+        output += square1.getOutput();
+        output += square2.getOutput();
         
         return output;
     }

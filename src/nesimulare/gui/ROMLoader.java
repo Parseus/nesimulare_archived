@@ -205,7 +205,7 @@ public class ROMLoader {
         
         if (haschrram) {
             if (chrramSize == 0) {
-                chrromSize = 0x10000;
+                chrromSize = 0x2000;
             } else {
                 chrromSize = chrramSize;
             }
@@ -273,13 +273,15 @@ public class ROMLoader {
             case 24:
             case 26:
                 return new VRC6(prgrom, chrrom, trainer, haschrram);
+            case 29:
+                return new Mapper029(prgrom, chrrom, trainer, haschrram);
             case 32:
                 return new IremG101(prgrom, chrrom, trainer, haschrram);
             case 33:
             case 48:
                 return new Taito_TC0190FMC(prgrom, chrrom, trainer, haschrram);
             case 34:
-                if (chrromSize <= 8192) {
+                if (haschrram && chrromSize <= 0x2000) {
                     return new BxROM(prgrom, chrrom, trainer, haschrram);
                 } else {
                     return new AVE_NINA_01(prgrom, chrrom, trainer, haschrram);
@@ -292,10 +294,16 @@ public class ROMLoader {
                 return new Mapper046(prgrom, chrrom, trainer, haschrram);
             case 47:
                 return new NES_QJ(prgrom, chrrom, trainer, haschrram);
+            case 50:
+                return new Mapper050(prgrom, chrrom, trainer, haschrram);
             case 58:
                 return new Mapper058(prgrom, chrrom, trainer, haschrram);
             case 60:
                 return new Mapper060(prgrom, chrrom, trainer, haschrram);
+            case 61:
+                return new Mapper061(prgrom, chrrom, trainer, haschrram);
+            case 62:
+                return new Mapper062(prgrom, chrrom, trainer, haschrram);
             case 64:
                 return new Tengen_800032(prgrom, chrrom, trainer, haschrram);
             case 65:
@@ -341,6 +349,8 @@ public class ROMLoader {
                 return new Namco3433_3443(prgrom, chrrom, trainer, haschrram);
             case 89:
                 return new Sunsoft_2_3(prgrom, chrrom, trainer, haschrram);
+            case 91:
+                return new Mapper091(prgrom, chrrom, trainer, haschrram);
             case 92:
                 return new Jaleco_JF_19(prgrom, chrrom, trainer, haschrram);
             case 93:
@@ -373,6 +383,10 @@ public class ROMLoader {
                 return new Mapper146(prgrom, chrrom, trainer, haschrram);
             case 147:
                 return new Mapper147(prgrom, chrrom, trainer, haschrram);
+            case 148:
+                return new Mapper148(prgrom, chrrom, trainer, haschrram);
+            case 149:
+                return new Mapper149(prgrom, chrrom, trainer, haschrram);
             case 152:
                 return new TAITO_74_161_161_32(prgrom, chrrom, trainer, haschrram);
             case 153:
@@ -381,6 +395,10 @@ public class ROMLoader {
                 return new Namco3453(prgrom, chrrom, trainer, haschrram);
             case 159:
                 return new Mapper159(prgrom, chrrom, trainer, haschrram);
+            case 172:
+                return new Mapper172(prgrom, chrrom, trainer, haschrram);
+            case 173:
+                return new Mapper173(prgrom, chrrom, trainer, haschrram);
             case 174:
                 return new Mapper174(prgrom, chrrom, trainer, haschrram);
             case 180:
@@ -391,6 +409,10 @@ public class ROMLoader {
                 return new Sunsoft1(prgrom, chrrom, trainer, haschrram);
             case 185:
                 return new Mapper185(prgrom, chrrom, trainer, haschrram);
+            case 188:
+                return new Mapper188(prgrom, chrrom, trainer, haschrram);
+            case 189:
+                return new Mapper189(prgrom, chrrom, trainer, haschrram);
             case 191:
                 return new Mapper191(prgrom, chrrom, trainer, haschrram);
             case 193:
@@ -417,6 +439,8 @@ public class ROMLoader {
                 return new Mapper213(prgrom, chrrom, trainer, haschrram);
             case 214:
                 return new Mapper214(prgrom, chrrom, trainer, haschrram);
+            case 216:
+                return new Mapper216(prgrom, chrrom, trainer, haschrram);
             case 228:
                 return new MLT_Action52(prgrom, chrrom, trainer, haschrram);
             case 232:

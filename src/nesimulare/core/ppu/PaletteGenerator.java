@@ -31,18 +31,19 @@ import nesimulare.gui.Tools;
  * @author Parseus
  */
 public class PaletteGenerator {
-    static final float BLACK = 0.518F;
-    static final float WHITE = 1.962F;
-    static final float ATTENTUATION = 0.746F;
-    static final float WB = WHITE - BLACK;
-    static final double PI = Math.PI / 6.0;
-   
     static float saturation = 1.0F;
     static float hueTweak = 0.0F;
     static float contrast = 1.0F;
     static float brightness = 1.0F;
     static float gamma = 1.8F;
     
+    static final float BLACK = 0.518F;
+    static final float WHITE = 1.962F;
+    static final float ATTENTUATION = 0.746F;
+    static final float WB = WHITE - BLACK;
+    static final double PI = Math.PI / 6.0;
+    static float bright;
+
     static float cos[] = new float[12];
     static float sin[] = new float[12];
    
@@ -82,7 +83,7 @@ public class PaletteGenerator {
            
             float v = (spot - BLACK) / WB;
             v = (v - 0.5f) * contrast + 0.5f;
-            v *= brightness / 12.0f;
+            v *= bright;
             y += v;
             i += (v * cos[p]);
             q += (v * sin[p]);
@@ -98,6 +99,8 @@ public class PaletteGenerator {
    
     public static int[] generattePalette() {
         int palette[] = new int[512];
+        
+        bright = brightness / 12.0f;
         
         for (int p = 0; p < 12; p++) {
             cos[p] = (float) Math.cos(PI * (p + hueTweak));

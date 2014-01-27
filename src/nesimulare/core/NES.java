@@ -56,7 +56,7 @@ public class NES extends Thread {
     public ROMLoader loader;
     public AudioInterface audio;
     private final ReentrantLock lock = new ReentrantLock();
-    private int sampleRate;
+    public int sampleRate;
 
     public long framecount;
     private boolean coreEnabled = true;
@@ -98,14 +98,7 @@ public class NES extends Thread {
         board.initialize();
         cpu.initialize();
         
-        sampleRate = PrefsSingleton.get().getInt("sampleRate", 44100);
-        
-        if (audio != null) {
-            audio.destroy();
-        }
-        
-        audio = new Audio(this, sampleRate);
-        apu.setupPlayback();
+        setupPlayback();
     }
     
      public void run(final String romtoload) {
@@ -223,8 +216,7 @@ public class NES extends Thread {
         
         if (audio != null) {
             audio.resume();
-            audio.outputSample(apu.pullSample());
-            audio.flushFrame(frameLimiter.enabled);
+            apu.finishFrame();
         }
         
         if (frameLimiter != null) {
@@ -333,5 +325,16 @@ public class NES extends Thread {
     
     public boolean bufferHasLessThan(int samples) {
         return audio.bufferHasLessThan(samples);
+    }
+    
+    public void setupPlayback() {
+        sampleRate = PrefsSingleton.get().getInt("sampleRate", 44100);
+        
+        if (audio != null) {
+            audio.destroy();
+        }
+        
+        audio = new Audio(this, sampleRate);
+        apu.setupPlayback();
     }
 }

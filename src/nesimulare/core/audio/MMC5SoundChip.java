@@ -81,10 +81,10 @@ public class MMC5SoundChip implements ExpansionSoundChip {
     }
     
     @Override
-    public short mix() {
-        short output = (short)pulse1.getOutput();
-        output += (short)pulse2.getOutput();
-        output += (short)pcm.getOutput();
+    public int mix() {
+        int output = pulse1.getOutput();
+        output += pulse2.getOutput();
+        output += pcm.getOutput();
         
         return output;
     }
