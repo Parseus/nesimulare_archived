@@ -27,14 +27,29 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates mapper 62.
  *
  * @author Parseus
  */
 public class Mapper062 extends Board {
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Mapper062(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         int page = ((address & 0x3F00) >> 8) | (address & 0x40);

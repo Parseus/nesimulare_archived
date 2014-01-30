@@ -27,6 +27,7 @@ import nesimulare.core.cpu.CPU;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates mapper 50.
  *
  * @author Parseus
  */
@@ -34,10 +35,21 @@ public class Mapper050 extends Board {
     private int irqCounter = 0;
     private boolean irqEnabled = false;
     
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Mapper050(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
  
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -48,11 +60,23 @@ public class Mapper050 extends Board {
         super.switch8kPRGbank(0xB, 0xE000);
     }
     
+    /**
+     * Reads data from a given address within the range $6000-$7FFF.
+     * 
+     * @param address       Address to read data from
+     * @return              Read data
+     */
     @Override
     public int readSRAM(int address) {
         return prg[(address - 0x6000) + (0xF << 13)];
     }
     
+    /**
+     * Writes data to a given address within the range $4020-$5FFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writeEXP(int address, int data) {
         switch (address & 0x4120) {
@@ -73,6 +97,9 @@ public class Mapper050 extends Board {
         }
     }
     
+    /**
+     * Clocks IRQ every CPU cycle.
+     */
     @Override
     public void clockCPUCycle() {
         if (irqEnabled) {

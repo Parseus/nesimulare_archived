@@ -28,6 +28,7 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates a IREM-H3001 board (mapper 65).
  *
  * @author Parseus
  */
@@ -36,10 +37,21 @@ public class IremH3001 extends Board {
     private int irqReload = 0;
     private boolean irqEnabled = false;
     
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public IremH3001(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -50,6 +62,12 @@ public class IremH3001 extends Board {
         super.switch8kPRGbank((prg.length - 0x2000) >> 13, 0xE000);
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         switch (address) {
@@ -105,6 +123,9 @@ public class IremH3001 extends Board {
         }
     }
     
+    /**
+     * Clocks IRQ every CPU cycle.
+     */
     @Override
     public void clockCPUCycle() {
         if (irqEnabled) {

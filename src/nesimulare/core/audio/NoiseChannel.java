@@ -27,6 +27,8 @@ package nesimulare.core.audio;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates NES APU's noise channel which generates pseudo-random 1-bit noise at 16 different frequencies.
+ * The noise channel contains the following: envelope generator, timer, Linear Feedback Shift Register, length counter.
  *
  * @author Parseus
  */
@@ -34,22 +36,32 @@ public class NoiseChannel extends APUChannel {
     public int[] noiseFrequency;
     
     private int shiftRegister;
-    private int volume;
     private int envelopeCount, envelopeTimer, envelopeSound;
     private int envelopeDelay, envelopeVolume;
     private boolean modeFlag;
     private boolean envelopeEnabled, envelopeLoop, envelopeReload;
     
+    /**
+     * Constructor for this class. Connects an emulated region with a given channel.
+     *
+     * @param system Emulated region
+     */
     public NoiseChannel(nesimulare.core.Region.System system) {
         super(system);
     }
     
+    /**
+     * Initializes a given channel.
+     */
     @Override
     public void initialize() {
         super.initialize();
         hardReset();
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -61,9 +73,16 @@ public class NoiseChannel extends APUChannel {
         envelopeEnabled = envelopeLoop = envelopeReload = false;
     }
     
+    /**
+     * Writes data to a given register
+     *
+     * @param register Register to write data to
+     * @param data Written data
+     */
     public void write(final int register, final int data) {
         switch (register) {
             /**
+             * $400C
              * --LC VVVV
              * Envelope loop / length counter halt (L), 
              * constant volume (C), volume/envelope (V)
@@ -77,8 +96,9 @@ public class NoiseChannel extends APUChannel {
                 break;
               
             /**
-             * L--- PPPP
-             * Loop noise (L), noise period (P)
+             * $400E
+             * M--- PPPP
+             * Mode flag (M), noise period (P)
              */
             case 2:
                 region.singleCycle = getCycles(noiseFrequency[data & 0xF]);
@@ -86,11 +106,12 @@ public class NoiseChannel extends APUChannel {
                 break;
             
             /**
+             * $400F
              * LLLL L---
              * Length counter load (L)
              */    
             case 3:
-                lenctrReload = lenctrTable[data >> 3];
+                lengthCounterReload = lenctrTable[data >> 3];
                 lenctrReloadRequest = true;
                 envelopeReload = true;
                 break;
@@ -100,6 +121,9 @@ public class NoiseChannel extends APUChannel {
         }
     }
     
+    /**
+     * Performs an individual machine cycle.
+     */
     @Override
     public void cycle() {
         if (modeFlag) {
@@ -130,18 +154,26 @@ public class NoiseChannel extends APUChannel {
         }
     }
     
+    /**
+     * Clocks length counter.
+     */
     public void halfFrame() {
         if (!lenctrHalt) {
-            if (lenctr > 0) {
-                lenctr = (lenctr - 1) & 0xFF;
+            if (lengthCounter > 0) {
+                lengthCounter = (lengthCounter - 1) & 0xFF;
             }
         }  
     }
     
+    /**
+     * Generates an audio sample for use with an audio renderer.
+     *
+     * @return Audio sample for use with an audio renderer.
+     */
     public final int getOutput() {
         envelopeSound = envelopeEnabled ? envelopeVolume : envelopeCount;
         
-        if (lenctr > 0 && !Tools.getbit(shiftRegister, 0)) {
+        if (lengthCounter > 0 && !Tools.getbit(shiftRegister, 0)) {
             return envelopeSound;
         }
         

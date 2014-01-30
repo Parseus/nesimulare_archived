@@ -28,14 +28,29 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates a 100-in-1 Contra Function 16 multicart (mapper 15).
  *
  * @author Parseus
  */
 public class Mapper015 extends Board {
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Mapper015(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         switch (address & 0x3) {

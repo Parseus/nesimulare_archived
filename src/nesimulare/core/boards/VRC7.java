@@ -24,6 +24,7 @@
 
 package nesimulare.core.boards;
 
+import nesimulare.core.audio.VRC7SoundChip;
 import nesimulare.core.cpu.CPU;
 import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
@@ -33,10 +34,11 @@ import nesimulare.gui.Tools;
  * @author Parseus
  */
 public class VRC7 extends Board {
-    //private VRC7SoundChip soundChip; // TODO: Implement the soundchip
+    private VRC7SoundChip soundChip;
     private int irqCounter = 0;
     private int irqPrescaler = 0;
     private int irqReload = 0;
+    private int soundRegister = 0;
     private boolean irqEnabled = false;
     private boolean irqEnabledOnAcknowledge = false;
     private boolean irqMode = false;
@@ -49,7 +51,7 @@ public class VRC7 extends Board {
 //    public void initialize() {
 //        super.initialize();
 //        
-//        soundChip = new VRC7SoundChip(nes.region);
+//        soundChip = new VRC7SoundChip();
 //        nes.apu.addExpansionSoundChip(soundChip);
 //    }
     
@@ -71,6 +73,13 @@ public class VRC7 extends Board {
                 break; 
             case 0x9000:
                 super.switch8kPRGbank(data, 0xC000);
+                break;
+                
+            case 0x9010:
+                //soundRegister = data;
+                break;
+            case 0x9030:
+                //soundChip.write(soundRegister, data);
                 break;
                 
             case 0xA000:

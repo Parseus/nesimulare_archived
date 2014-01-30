@@ -25,14 +25,30 @@
 package nesimulare.core.boards;
 
 /**
+ * Emulates a GxROM boardset (mapper 66).
  *
  * @author Parseus
  */
 public class GxROM extends Board {
+    /**
+     * Constructor for this class.
+     * 
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM
+     *                  False: PCB contains CHR-ROM
+     */
     public GxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
 
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         super.switch32kPRGbank((data & 0x30) >> 4);

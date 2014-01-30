@@ -1,4 +1,4 @@
-/*
+ /*
  * The MIT License
  *
  * Copyright 2013-2014 Parseus.
@@ -22,34 +22,44 @@
  * THE SOFTWARE.
  */
 
-package nesimulare;
+package nesimulare.core.boards;
 
-import java.io.IOException;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-
-public class NESimulare {
-    static nesimulare.core.NES core;
+/**
+ *
+ * @author Parseus
+ */
+public class Mapper151 extends Board {
+    public Mapper151(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+        super(prg, chr, trainer, haschrram);
+    }
     
-    /**
-     * Launches the program.
-     * 
-     * @param args              Arguments for command line. If given, launches the program and loads given ROM.
-     * @throws IOException      Exception thrown when NESimualre fails to load ROM successfully.
-     */
-    public static void main(String[] args) throws IOException {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
-            javax.swing.JOptionPane.showMessageDialog(null, e.getMessage());
-        }
+    @Override
+    public void hardReset() {
+        super.hardReset();
         
-        core = new nesimulare.core.NES();
-        
-        if (args == null || args.length < 1 || args[0] == null) {
-            core.run();
-        } else {
-            core.run(args[0]);
+        super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
+    }
+    
+    @Override
+    public void writePRG(int address, int data) {
+        switch (address & 0xF000) {
+            case 0x8000:
+                super.switch8kPRGbank(data, 0x8000);
+                break;
+            case 0xA000:
+                super.switch8kPRGbank(data, 0xA000);
+                break;
+            case 0xC000:
+                super.switch8kPRGbank(data, 0xC000);
+                break;
+            case 0xE000:
+                super.switch4kCHRbank(data, 0x0000);
+                break;
+            case 0xF000:
+                super.switch4kCHRbank(data, 0x1000);
+                break;
+            default:
+                break;
         }
     }
 }

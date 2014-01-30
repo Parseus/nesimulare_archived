@@ -29,6 +29,11 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates following boards (mapper 16):
+ * - Bandai FCG-1 (Registers are at $6000-$7FFF. No persistent writable storage);
+ * - Bandai FCG-2 (Registers are at $6000-$7FFF. No persistent writable storage);
+ * - Bandai LZ93D50 (Registers are at $8000-$FFFF. No persistent writable storage);
+ * - Bandai LZ93D50 with 24C02 (Registers are at $8000-$FFFF. 24C02 256-byte serial EEPROM is attached to $6000-$7FFF).
  *
  * @author Parseus
  */
@@ -37,10 +42,22 @@ public class Bandai_FCG extends Board {
     private int irqCounter = 0;
     private boolean irqEnabled = false;
     
+    /**
+     * Constructor for this class.
+     * 
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM
+     *                  False: PCB contains CHR-ROM
+     */
     public Bandai_FCG(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Initializes the board.
+     */
     @Override
     public void initialize() {
         super.initialize();
@@ -48,16 +65,25 @@ public class Bandai_FCG extends Board {
         eeprom = new EEPROM(256);
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
-        
         eeprom.hardReset();
+        
         super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
         irqCounter = 0;
         irqEnabled = false;
     }
     
+    /**
+     * Reads data from a given address within the range $6000-$7FFF.
+     * 
+     * @param address       Address to read data from
+     * @return              Read data
+     */
     @Override
     public int readSRAM(int address) {
         int result = CPU.lastRead & 0xEF;
@@ -69,46 +95,64 @@ public class Bandai_FCG extends Board {
         return result;
     }
     
+    /**
+     * Writes data to a given address within the range $6000-$7FFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writeSRAM(int address, int data) {
         writeReg(address & 0xF, data);
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         writeReg(address & 0xF, data);
     }
     
+    /**
+     * Writes data to a given register
+     *
+     * @param register Register to write data to
+     * @param data Written data
+     */
     private void writeReg(int register, int data) {
         switch (register) {
-            case 0x0:
+            case 0x0: // CHR bank select 0 (PPU $0000-$03FF)
                 super.switch1kCHRbank(data, 0x0000);
                 break;
-            case 0x1:
+            case 0x1: // CHR bank select 1 (PPU $0400-$07FF)
                 super.switch1kCHRbank(data, 0x0400);
                 break;
-            case 0x2:
+            case 0x2: // CHR bank select 2 (PPU $0800-$0BFF)
                 super.switch1kCHRbank(data, 0x0800);
                 break;
-            case 0x3:
+            case 0x3: // CHR bank select 3 (PPU $0C00-$0FFF)
                 super.switch1kCHRbank(data, 0x0C00);
                 break;
-            case 0x4:
+            case 0x4: // CHR bank select 4 (PPU $1000-$13FF)
                 super.switch1kCHRbank(data, 0x1000);
                 break;
-            case 0x5:
+            case 0x5: // CHR bank select 5 (PPU $1400-$17FF)
                 super.switch1kCHRbank(data, 0x1400);
                 break;
-            case 0x6:
+            case 0x6: // CHR bank select 6 (PPU $1800-$1BFF)
                 super.switch1kCHRbank(data, 0x1800);
                 break;
-            case 0x7:
+            case 0x7: // CHR bank select 7 (PPU $1C00-$1FFF)
                 super.switch1kCHRbank(data, 0x1C00);
                 break;
-            case 0x8:
+            case 0x8: // PRG Bank select (CPU $8000-$BFFF)
                 super.switch16kPRGbank(data, 0x8000);
                 break;
-            case 0x9:
+            case 0x9: // Mirroring Control
                 switch (data & 3) {
                     case 0:
                         nes.ppuram.setMirroring(PPUMemory.Mirroring.VERTICAL);
@@ -126,17 +170,17 @@ public class Bandai_FCG extends Board {
                         break;
                 }
                 break;
-            case 0xA:
+            case 0xA: // IRQ Control
                 irqEnabled = Tools.getbit(data, 0);
                 nes.cpu.interrupt(CPU.InterruptTypes.BOARD, false);
                 break;
-            case 0xB:
+            case 0xB: // IRQ Counter
                 irqCounter = (irqCounter & 0xFF00) | data;
                 break;
-            case 0xC:
+            case 0xC: // IRQ Counter
                 irqCounter = (irqCounter & 0x00FF) | (data << 8);
                 break;
-            case 0xD:
+            case 0xD: // EEPROM Control
                 eeprom.write(register, data);
                 break;
             default:
@@ -144,6 +188,9 @@ public class Bandai_FCG extends Board {
         }
     }
     
+    /**
+     * Clocks IRQ every CPU cycle.
+     */
     @Override
     public void clockCPUCycle() {
         if (irqEnabled) {
@@ -159,6 +206,11 @@ public class Bandai_FCG extends Board {
         }
     }
     
+    /**
+     * Returns save data on EEPROM.
+     * 
+     * @return      Save data on EEPROM
+     */
     @Override
     public int[] getSRAM() {
         return eeprom.rom;

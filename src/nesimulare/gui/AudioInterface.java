@@ -39,6 +39,4 @@ public interface AudioInterface {
     public void resume();
 
     public void destroy();
-
-    public boolean bufferHasLessThan(int samples);
 }

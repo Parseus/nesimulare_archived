@@ -24,14 +24,37 @@
 package nesimulare.core.boards;
 
 /**
- *
+ * Emulates following boards (mapper 87):
+ * - Jaleco JF-05;
+ * - Jaleco JF-06;
+ * - Jaleco JF-07;
+ * - Jaleco JF-08;
+ * - Jaleco JF-09;
+ * - Jaleco JF-10;
+ * - Konami-74*139/74;
+ * - Taito-74*139/74.
+ * 
  * @author Parseus
  */
 public class Jaleco_JF_0x_10 extends Board {
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Jaleco_JF_0x_10(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Writes data to a given address within the range $6000-$7FFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writeSRAM(int address, int data) {
         super.switch8kCHRbank((data & 0x1) << 1 | (data & 0x2) >> 1);

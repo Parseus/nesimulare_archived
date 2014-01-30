@@ -33,7 +33,6 @@ import nesimulare.core.Region;
  * @author Parseus
  */
 public class Audio implements AudioInterface {
-
     public boolean soundEnable;
     public SourceDataLine sdl;
     private byte[] audiobuf;
@@ -43,9 +42,11 @@ public class Audio implements AudioInterface {
     public Audio(final NES nes, final int samplerate) {
         soundEnable = PrefsSingleton.get().getBoolean("soundEnable", true);
         outputvol = (float) (PrefsSingleton.get().getInt("outputvol", 13107) / 16384.);
+        
         if (soundEnable) {
             final int samplesperframe = (int) Math.ceil((samplerate * 2) / (nes.region == Region.NTSC ? 60. : 50.));
             audiobuf = new byte[samplesperframe * 2];
+            
             try {
                 AudioFormat af = new AudioFormat(
                         samplerate,
@@ -55,6 +56,7 @@ public class Audio implements AudioInterface {
                         false //little endian
                         //(works everywhere, afaict, but macs need 44100 sample rate)
                         );
+                
                 sdl = AudioSystem.getSourceDataLine(af);
                 sdl.open(af, samplesperframe * 8); //create 4 frame audio buffer
                 sdl.start();
@@ -78,22 +80,25 @@ public class Audio implements AudioInterface {
                 sdl.write(audiobuf, 0, bufptr);
             }
         }
+        
         bufptr = 0;
-
     }
 
     @Override
     public final void outputSample(int sample) {
         if (soundEnable) {
             sample *= outputvol;
+            
             if (sample < -32768) {
                 sample = -32768;
                 //System.err.println("clip");
             }
+            
             if (sample > 32767) {
                 sample = 32767;
                 //System.err.println("clop");
             }
+            
             audiobuf[bufptr] = (byte) (sample & 0xff);
             audiobuf[bufptr + 1] = (byte) ((sample >> 8) & 0xff);
             bufptr += 2;
@@ -126,10 +131,4 @@ public class Audio implements AudioInterface {
             sdl.close();
         }
     }
-
-    @Override
-    public final boolean bufferHasLessThan(final int samples) {
-        //returns true if the audio buffer has less than the specified amt of samples remaining in it
-        return (sdl == null) ? false : ((sdl.getBufferSize() - sdl.available()) <= samples);
-    }    
 }

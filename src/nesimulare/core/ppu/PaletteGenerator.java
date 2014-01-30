@@ -27,6 +27,7 @@ package nesimulare.core.ppu;
 import nesimulare.gui.Tools;
  
 /**
+ * Class generating an internal PPU color palette.
  *
  * @author Parseus
  */
@@ -52,18 +53,44 @@ public class PaletteGenerator {
           1.094F, 1.506F, 1.962F, 1.962F        //Signal high
         };
    
+    /**
+     * Generates a waveform step.
+     * 
+     * @param p         Signal phase
+     * @param color     9-bit pixel color
+     * @return 
+     */
     final static int wave(final int p, final int color) {
         return ((color + p + 8) % 12 < 6) ? 1 : 0;
     }
    
+    /**
+     * Fixes a display gamma.
+     * 
+     * @param f         Value from a conversion matrix
+     * @param gamma     Display gamma
+     * @return          Fixed display gamma
+     */
     final static float gammafix(final float f, final float gamma) {
         return (float)(f < 0.0f ? 0.0f : Math.pow(f, 2.2f / gamma));
     }
    
+    /**
+     * Clamps a signal.
+     * 
+     * @param v     Signal phase
+     * @return      Clamped signal phase
+     */
     final static int clamp(final float v) {
         return (int)(v < 0 ? 0 : v > 255 ? 255 : v);
     }
    
+    /**
+     * Generates and converts a pixel from YIQ color space to RGB color space
+     * 
+     * @param pixel     9-bit pixel color
+     * @return          9-bit pixel color in RGB color space
+     */
     private static int generateRGBColor(int pixel) {
         final int color = (pixel & 0xF);
         final int level = color < 0xE ? (pixel >> 4) & 0x3 : 0x1;
@@ -97,6 +124,11 @@ public class PaletteGenerator {
                0x00001 * clamp(255.95F * gammafix(y - 1.108545F * i + 1.709007F * q, gamma));
     }
    
+    /**
+     * Generates the entire color palette.
+     * 
+     * @return      An array with a color palette.
+     */
     public static int[] generattePalette() {
         int palette[] = new int[512];
         

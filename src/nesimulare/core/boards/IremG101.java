@@ -27,6 +27,7 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates a IREM G-101 board (mapper 32).
  *
  * @author Parseus
  */
@@ -35,10 +36,22 @@ public class IremG101 extends Board {
     private boolean prgMode = false;
     private boolean unk_if_13 = false;
     
+    /**
+     * Constructor for this class.
+     * 
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM
+     *                  False: PCB contains CHR-ROM
+     */
     public IremG101(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Initializes the board.
+     */
     @Override
     public void initialize() {
         super.initialize();
@@ -46,6 +59,9 @@ public class IremG101 extends Board {
         unk_if_13 = "7E4180432726A433C46BA2206D9E13B32761C11E".equals(nes.loader.sha1);
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -55,6 +71,12 @@ public class IremG101 extends Board {
         prgMode = false;
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         switch (address & 0xF007) {
@@ -104,6 +126,9 @@ public class IremG101 extends Board {
         }
     }
     
+    /**
+     * Sets up PRG bankswitching depending on a PRG mode.
+     */
     private void setupPRG() {
         if (prgMode) {
             super.switch8kPRGbank(prgRegister[0], 0x8000);

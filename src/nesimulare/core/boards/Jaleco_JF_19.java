@@ -26,16 +26,29 @@ package nesimulare.core.boards;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates a Jaleco JF-19 board (mapper 92).
+ * Sound control is not currently supported (need to find a cartridge and/or ADPCM samples).
  *
  * @author Parseus
  */
 public class Jaleco_JF_19 extends Board {
     private int latch;
     
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Jaleco_JF_19(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -44,6 +57,12 @@ public class Jaleco_JF_19 extends Board {
         latch = 0;
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         final int value = getBusData(address, data);

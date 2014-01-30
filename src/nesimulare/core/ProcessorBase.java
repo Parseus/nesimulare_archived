@@ -25,24 +25,56 @@
 package nesimulare.core;
 
 /**
+ * The interface class for processors and APU channels.
  *
  * @author Parseus
  */
-
-
 public class ProcessorBase {
     public Region region = new Region();
     public Region.System system;
     
+    /**
+     * Constructor for this class. Connects an emulated region with a given processor/channel.
+     * 
+     * @param system 
+     */
     public ProcessorBase(Region.System system) {
         this.system = system;
     }
     
-    public void initialize() { }
-    public void softReset() { }
-    public void hardReset() { }
-    public void cycle() { }
+    /**
+     * Initializes a given processor/channel.
+     */
+    public void initialize() { 
+        //Nothing to see here, move along
+    }
     
+    /**
+     * Performs a soft reset (pressing Reset button on a console).
+     */
+    public void softReset() { 
+        //Nothing to see here, move along
+    }
+    
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
+    public void hardReset() { 
+        //Nothing to see here, move along
+    }
+    
+    /**
+     * Performs an individual machine cycle.
+     */
+    public void cycle() { 
+        //Nothing to see here, move along
+    }
+    
+    /**
+     * Performs a given number of machine cycles.
+     * 
+     * @param cycles        Number of machine cycles.
+     */
     public void cycle(int cycles) {
         while(region.cycles < cycles) {
             region.cycles += region.singleCycle;

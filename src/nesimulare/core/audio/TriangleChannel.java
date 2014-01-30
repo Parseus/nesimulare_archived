@@ -27,10 +27,15 @@ package nesimulare.core.audio;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates NES APU's triangle channel that generates a pseudo-triangle wave.
+ * The triangle channel contains the following: timer, length counter, linear counter, linear counter reload flag, control flag, sequencer.
  *
  * @author Parseus
  */
 public class TriangleChannel extends APUChannel { 
+    /**
+     * Step sequencer.
+     */
     private static final int[] stepSequence = {
         0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
@@ -38,15 +43,23 @@ public class TriangleChannel extends APUChannel {
     
     private int output;
     private int step;
-    private int counter = 0;
-    private int counterReload;
-    private boolean counterHalt;
-    private boolean halt;
+    private int linearCounter = 0;
+    private int linearCounterReload;
+    private boolean linearCounterHalt;
+    private boolean channelHalt;
     
+    /**
+     * Constructor for this class. Connects an emulated region with a given channel.
+     *
+     * @param system Emulated region
+     */
     public TriangleChannel(nesimulare.core.Region.System system) {
         super(system);
     }
     
+    /**
+     * Initializes a given channel.
+     */
     @Override
     public void initialize() {
         super.initialize();
@@ -54,31 +67,42 @@ public class TriangleChannel extends APUChannel {
         hardReset();
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
         
-        counter = 0;
-        counterReload = 0;
+        linearCounter = 0;
+        linearCounterReload = 0;
         output = 0;
         step = 0;
-        counterHalt = false;
-        halt = false;
+        linearCounterHalt = false;
+        channelHalt = false;
     }
     
+    /**
+     * Writes data to a given register
+     *
+     * @param register Register to write data to
+     * @param data Written data
+     */
     public void write(final int register, final int data) {
         switch (register) {
             /**
+             * $4008
              * CRRR RRRR
              * Length counter halt / linear counter control (C), 
              * linear counter load (R) 
              */
             case 0:
-                counterHalt = lenctrHaltRequest = Tools.getbit(data, 7);
-                counterReload = data & 0x7F;
+                linearCounterHalt = lenctrHaltRequest = Tools.getbit(data, 7);
+                linearCounterReload = data & 0x7F;
                 break;
               
             /**
+             * $400A
              * TTTT TTTT
              * Timer low (T)
              */
@@ -88,13 +112,15 @@ public class TriangleChannel extends APUChannel {
                 break;
             
             /**
+             * $400B
              * LLLL LTTT
              * Length counter load (L), timer high (T)
+             * (also sets the linear counter reload flag)
              */    
             case 3:
-                lenctrReload = lenctrTable[data >> 3];
+                lengthCounterReload = lenctrTable[data >> 3];
                 lenctrReloadRequest = true;
-                halt = true;
+                channelHalt = true;
                 
                 frequency = (frequency & 0xFF) | ((data & 7) << 8);
                 updateFrequency();
@@ -105,9 +131,12 @@ public class TriangleChannel extends APUChannel {
         }
     }
     
+    /**
+     * Performs an individual machine cycle.
+     */
     @Override
     public void cycle() {
-        if (lenctr > 0 && counter > 0) {
+        if (lengthCounter > 0 && linearCounter > 0) {
             if (frequency >= 4) {
                 step++;
                 step &= 0x1F;
@@ -116,32 +145,46 @@ public class TriangleChannel extends APUChannel {
         }
     }
     
+    /**
+     * Clocks linear counter.
+     */
     public void quarterFrame() {
-        if (halt) {
-            counter = counterReload;
-        } else if (counter != 0) {
-            counter--;
+        if (channelHalt) {
+            linearCounter = linearCounterReload;
+        } else if (linearCounter != 0) {
+            linearCounter--;
         }
         
-        halt &= counterHalt;
+        channelHalt &= linearCounterHalt;
     }
     
+    /**
+     * Clocks length counter.
+     */
     public void halfFrame() {
-        if (!lenctrHalt && lenctr > 0) {
-            lenctr = (lenctr - 1) & 0xFF;
+        if (!lenctrHalt && lengthCounter > 0) {
+            lengthCounter = (lengthCounter - 1) & 0xFF;
         }
     }
     
+    /**
+     * Updates a single cycle timing based on frequency.
+     */
     private void updateFrequency() {
-        int time = (frequency + 1) / 2;
+        int timer = (frequency + 1) / 2;
         
-        if (time == 0) {
-            time = 1;
+        if (timer == 0) {
+            timer = 1;
         }
         
-        region.singleCycle = getCycles(time);
+        region.singleCycle = getCycles(timer);
     }
     
+    /**
+     * Generates an audio sample for use with an audio renderer.
+     *
+     * @return Audio sample for use with an audio renderer.
+     */
     public final int getOutput() {
         return output;
     }

@@ -25,6 +25,7 @@
 package nesimulare.core.cpu;
 
 /**
+ * Class storing informations about CPU opcodes.
  *
  * @author Parseus
  */

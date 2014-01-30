@@ -25,20 +25,41 @@
 package nesimulare.core.boards;
 
 /**
+ * Emulates a Rumblestation 15-in-1 multicart (mapper 46).
  *
  * @author Parseus
  */
 public class Mapper046 extends Board {
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Mapper046(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Writes data to a given address within the range $6000-$7FFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writeSRAM(int address, int data) {
         super.switch32kPRGbank(((prgpage[0] >> 15) & 0x1) | (data << 1 & 0x1E));
         super.switch8kCHRbank(((chrpage[0] >> 13) & 0x7) | (data >> 1 & 0x78));
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data ) {
         super.switch32kPRGbank((data & 0x1) | ((prgpage[0] >> 15) & 0x1E));

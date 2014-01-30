@@ -27,6 +27,7 @@ import nesimulare.core.Region;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates a sawtooth channel that is a part of VRC6 sound chip.
  *
  * @author Parseus
  */
@@ -37,10 +38,18 @@ public class VRC6SawtoothSoundChannel extends APUChannel {
     private int output = 0;
     private boolean enabled = true;
     
+    /**
+     * Constructor for this class. Connects an emulated region with a given channel.
+     *
+     * @param system Emulated region
+     */
     public VRC6SawtoothSoundChannel(Region.System system) {
         super(system);
     }
 
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -52,17 +61,50 @@ public class VRC6SawtoothSoundChannel extends APUChannel {
         enabled = true;
     }
     
+    /**
+     * Writes data to a given register
+     *
+     * @param register Register to write data to
+     * @param data Written data
+     */
     public void write(final int register, final int data) {
         switch (register) {
+            /**
+             * $B000
+             * Saw volume
+             * 7  bit  0
+             * ---- ----
+             * ..AA AAAA
+             *   ++-++++- Accumulator Rate (controls volume)
+             */
             case 0:
                 accumRate = data & 0x3F;
                 break;
 
+            /**
+             * $B001
+             * Saw period low
+             * 7  bit  0
+             * ---- ----
+             * FFFF FFFF
+             * |||| ||||
+             * ++++-++++- Low 8 bits of frequency
+             */    
             case 1:
                 frequency = (frequency & 0x0F00) | data;
                 updateFrequency();
                 break;
                  
+            /**
+             * $B002
+             * Saw period high
+             * 7  bit  0
+             * ---- ----
+             * E... FFFF
+             * |    ||||
+             * |    ++++- High 4 bits of frequency
+             * +--------- Enable (0 = channel disabled)
+             */
             case 2:
                 enabled = Tools.getbit(data, 7);
                 frequency = (frequency & 0x00FF) | ((data & 0xF) << 8);
@@ -74,6 +116,9 @@ public class VRC6SawtoothSoundChannel extends APUChannel {
         }
     }
     
+    /**
+     * Performs an individual machine cycle.
+     */
     @Override
     public void cycle() {
         accumStep++;
@@ -94,12 +139,20 @@ public class VRC6SawtoothSoundChannel extends APUChannel {
         output = (accum >> 3) & 0x1F;
     }
     
+    /**
+     * Updates a single cycle timing based on frequency.
+     */
     private void updateFrequency() {
         region.singleCycle = (frequency + 1) * system.cpu;
     }
     
+    /**
+     * Generates an audio sample for use with an audio renderer.
+     *
+     * @return Audio sample for use with an audio renderer.
+     */
     public final int getOutput() {
-        if (enabled & frequency > 0x4) {
+        if (enabled && frequency > 0x4) {
             return output;
         } else {
             return 0;

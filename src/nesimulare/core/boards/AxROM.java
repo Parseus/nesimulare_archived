@@ -28,16 +28,43 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates a AxROM series board (mapper 7).
+ * Supports an oversized 512k PRG-ROM version.
  *
  * @author Parseus
  */
 public class AxROM extends Board {
+    /**
+     * Constructor for this class.
+     * 
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM
+     *                  False: PCB contains CHR-ROM
+     */
     public AxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
 
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
+        /**
+         * $8000-$FFFF: Bank select
+         * 7  bit  0
+         * ---- ----
+         * xxxM xPPP
+         *    |  |||
+         *    |  +++- Select 32 KB PRG ROM bank for CPU $8000-$FFFF (only 2 bits wide on AMROM.ANROM)
+         *    +------ Select 1 KB VRAM page for all 4 nametables
+         */
+        
         if (Tools.getbit(data, 4)) {
             nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENB);
         } else {

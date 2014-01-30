@@ -29,6 +29,7 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates a FxROM (MMC4) boardset (mapper 10).
  *
  * @author Parseus
  */
@@ -37,10 +38,22 @@ public class FxROM extends Board {
     private int rightLatch = 0xFE;
     private final int register[] = new int[4];
     
+    /**
+     * Constructor for this class.
+     * 
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM
+     *                  False: PCB contains CHR-ROM
+     */
     public FxROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -52,6 +65,12 @@ public class FxROM extends Board {
         super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         switch (address & 0xF000) {
@@ -98,6 +117,12 @@ public class FxROM extends Board {
         }
     }
     
+    /**
+     * Reads PPU data from a given address within the range $0000-$1FFF.
+     * 
+     * @param address       Address to read data from
+     * @return              Read data
+     */
     @Override
     public int readCHR(int address) {
         final int data = super.readCHR(address);
@@ -106,6 +131,11 @@ public class FxROM extends Board {
         return data;
     }
     
+    /**
+     * Performs a CHR bankswitching depending on values of latches.
+     * 
+     * @param address Address to switch a CHR bank at
+     */
     private void chrLatch(int address) {
         if ((address & 0x1FF0) == 0x0FD0 && leftLatch != 0xFD) {
             leftLatch = 0xFD;

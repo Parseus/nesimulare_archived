@@ -27,17 +27,26 @@ import nesimulare.core.Region;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates a PCM channel that is a part of MMC5 sound chip.
  *
  * @author Parseus
  */
 public class MMC5PCMChannel extends APUChannel {
     private int output = 0;
-    private boolean outputEnabled = false;
+    private boolean readMode = false;
     
+    /**
+     * Constructor for this class. Connects an emulated region with a given channel.
+     *
+     * @param system Emulated region
+     */
     public MMC5PCMChannel(Region.System system) {
         super(system);
     }
     
+    /**
+     * Initializes a given channel.
+     */
     @Override
     public void initialize() {
         super.initialize();
@@ -45,36 +54,73 @@ public class MMC5PCMChannel extends APUChannel {
         hardReset();
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
         
         output = 0;
-        outputEnabled = false;
+        readMode = false;
     }
     
+    /**
+     * Clocks a channel depending on clocking length.
+     */
     @Override
-    public void clockChannel(boolean clockLength) { }
+    public void clockChannel(boolean clockLength) { 
+        //Override a method in order not to clock length counter which doesn't exist on a PCM channel
+    }
     
+    /**
+     * Writes data to a given register
+     *
+     * @param register Register to write data to
+     * @param data Written data
+     */
     public void write(final int register, final int data) {
         switch (register) {
+            /**
+             * $5010
+             * 7  bit  0
+             * ---- ----
+             * Ixxx xxxM
+             * |       |
+             * |       +- Mode select (0 = write mode. 1 = read mode.)
+             * +--------- PCM IRQ enable (1 = enabled.)
+             */
             case 0:
-                outputEnabled = Tools.getbit(data, 0);
+                //TODO: Emulate PCM IRQ
+                readMode = Tools.getbit(data, 0);
                 break;
+                
+            /**
+             * $5011
+             * 7  bit  0
+             * ---- ----
+             * WWWW WWWW
+             * |||| ||||
+             * ++++-++++- 8-bit PCM data
+             */
             case 1:
-                output = data;
-                break;
-            case 2:
-            case 3:
-                //TODO: Implement this
+                //Writes are ignored in PCM read mode
+                if (!readMode) {
+                    output = data;
+                }
                 break;
             default:
                 break;
         }
     }
     
+    /**
+     * Generates an audio sample for use with an audio renderer.
+     *
+     * @return Audio sample for use with an audio renderer.
+     */
     public final int getOutput() {
-        if (outputEnabled) {
+        if (readMode) {
             return output;
         }
         

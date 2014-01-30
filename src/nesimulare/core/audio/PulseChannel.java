@@ -27,6 +27,8 @@ package nesimulare.core.audio;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates NES APU's pulse wave channel that generates a pulse wave with variable duty.
+ * Each pulse channel contains the following: envelope generator, sweep unit, timer, 8-step sequencer, length counter.
  *
  * @author Parseus
  */
@@ -50,16 +52,27 @@ public class PulseChannel extends APUChannel {
     private boolean envelopeEnabled, envelopeLoop, envelopeReload;
     private boolean sweepEnabled, sweepReload, sweepNegateFlag;
     
+    /**
+     * Constructor for this class. Connects an emulated region with a given channel.
+     *
+     * @param system Emulated region
+     */
     public PulseChannel(nesimulare.core.Region.System system) {
         super(system);
     }
     
+    /**
+     * Initializes a given channel.
+     */
     @Override
     public void initialize() {
         super.initialize();
         hardReset();
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -73,9 +86,16 @@ public class PulseChannel extends APUChannel {
         sweepEnabled = sweepReload = sweepNegateFlag = false;
     }
     
+    /**
+     * Writes data to a given register
+     *
+     * @param register Register to write data to
+     * @param data Written data
+     */
     public void write(final int register, final int data) {
         switch (register) {
             /**
+             * $4000/$4004
              * DDLC VVVV
              * Duty (D), envelope loop / length counter halt (L), 
              * constant volume (C), volume/envelope (V)
@@ -90,6 +110,7 @@ public class PulseChannel extends APUChannel {
                 break;
                 
             /**
+             * $4001/$4005
              * EPPP NSSS
              * Sweep unit: enabled (E), period (P), negate (N), shift (S)
              */    
@@ -102,6 +123,7 @@ public class PulseChannel extends APUChannel {
                 break;
               
             /**
+             * $4002/$4006
              * TTTT TTTT
              * Timer low (T)
              */
@@ -111,11 +133,12 @@ public class PulseChannel extends APUChannel {
                 break;
             
             /**
+             * $4003/$4007
              * LLLL LTTT
              * Length counter load (L), timer high (T)
              */    
             case 3:
-                lenctrReload = lenctrTable[data >> 3];
+                lengthCounterReload = lenctrTable[data >> 3];
                 lenctrReloadRequest = true;
                 envelopeReload = true;
                 
@@ -130,19 +153,28 @@ public class PulseChannel extends APUChannel {
         }
     }
     
+    /**
+     * Performs an individual machine cycle.
+     */
     @Override
     public void cycle() {
         envelopeSound = envelopeEnabled ? envelopeVolume : envelopeCount;
         
         dutyCycle = (dutyCycle + 1) & 7;
             
-        if (lenctr > 0 && validFreq()) {
+        if (lengthCounter > 0 && validFreq()) {
             output = (dutySequences[dutyLength][dutyCycle] * envelopeSound) & 0xFF;
         } else {
             output = 0;
         }
     }
     
+    /**
+     * Checks if a frequency is within a valid range.
+     * 
+     * @return      True: Frequency is within a valid range
+     *              False: Frequency is outside a valid range
+     */
     private boolean validFreq() {
         return (frequency >= 0x8) && ((sweepNegateFlag) || 
             (((frequency + (frequency >> sweepShift)) & 0x800) == 0));
@@ -170,12 +202,12 @@ public class PulseChannel extends APUChannel {
     }
     
     /**
-     * Clocks sweep.
+     * Clocks a sweep unit and length counter.
      */
     public void halfFrame() {
         if (!lenctrHalt) {
-            if (lenctr > 0) {
-                lenctr = (lenctr - 1) & 0xFF;
+            if (lengthCounter > 0) {
+                lengthCounter = (lengthCounter - 1) & 0xFF;
             }
         }
         
@@ -196,12 +228,20 @@ public class PulseChannel extends APUChannel {
         updateFrequency();
     }
     
+    /**
+     * Updates a single cycle timing based on frequency.
+     */
     private void updateFrequency() {
         region.singleCycle = getCycles(frequency + 1);
     }
     
+    /**
+     * Generates an audio sample for use with an audio renderer.
+     *
+     * @return Audio sample for use with an audio renderer.
+     */
     public final int getOutput() {
-        if (lenctr > 0 && validFreq()) {
+        if (lengthCounter > 0 && validFreq()) {
             return output;
         } else {
             return output = 0;

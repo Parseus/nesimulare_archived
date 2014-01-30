@@ -25,16 +25,42 @@
 package nesimulare.core.boards;
 
 /**
+ * Emulates a CNROM board (mapper 3).
  *
  * @author Parseus
  */
-public class CNROM extends Board { 
+public class CNROM extends Board {
+    /**
+     * Constructor for this class.
+     * 
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM
+     *                  False: PCB contains CHR-ROM
+     */
     public CNROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
+        /**
+         * $8000-$FFFF: Bank select
+         * 7  bit  0
+         * ---- ----
+         * xxDD xxCC
+         *   ||   ||
+         *   ||   ++- Select 8 KB CHR ROM bank for PPU $0000-$1FFF
+         *   ++------ Security diodes config
+         */
+        
         super.switch8kCHRbank(getBusData(address, data));
     }
 }

@@ -27,6 +27,7 @@ import nesimulare.core.Region;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates a wavetable channel that is a part of Namco 163 sound chip.
  *
  * @author Parseus
  */
@@ -41,12 +42,21 @@ public class Namco163SoundChannel extends APUChannel {
     public boolean enabled = false;
     private boolean freeze = true;
     
+    /**
+     * Constructor for this class. Connects an emulated region with a given channel.
+     *
+     * @param system Emulated region
+     * @param soundChip Main sound chip class
+     */
     public Namco163SoundChannel(Region.System system, Namco163SoundChip soundChip) {
         super(system);
         
         this.soundChip = soundChip;
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -61,16 +71,32 @@ public class Namco163SoundChannel extends APUChannel {
         freeze = true;
     }
     
+    /**
+     * Given data, sets a low byte of frequency.
+     * 
+     * @param data Given data
+     */
     protected void lowFrequency(int data) {
         frequency = (frequency & 0x03FF00) | data;
         updateFrequency();
     }
     
+    /**
+     * Given data, sets a mid byte of frequency.
+     * 
+     * @param data Given data
+     */
     protected void midFrequency(int data) {
         frequency = (frequency & 0x0300FF) | (data << 8);
         updateFrequency();
     }
     
+    /**
+     * Given data, sets a high byte of frequency.
+     * Also sets up a waveform buffer.
+     * 
+     * @param data Given data
+     */
     protected void highFrequency(int data) {
         frequency = (frequency & 0x00FFFF) | ((data & 0x3) << 16);
         updateFrequency();
@@ -78,15 +104,28 @@ public class Namco163SoundChannel extends APUChannel {
         setupWaveformBuffer();
     }
     
+    /**
+     * Sets address of a waveform.
+     * 
+     * @param data 
+     */
     protected void waveAddress(int data) {
         waveformAddress = data;
         setupWaveformBuffer();
     }
     
+    /**
+     * Sets linear volume.
+     * 
+     * @param data 
+     */
     protected void setVolume(int data) {
         linearVolume = data & 0xF;
     }
     
+    /**
+     * Performs an individual machine cycle.
+     */
     @Override
     public void cycle() {
         if (freeze) {
@@ -99,6 +138,11 @@ public class Namco163SoundChannel extends APUChannel {
         }
     }
     
+    /**
+     * Generates an audio sample for use with an audio renderer.
+     *
+     * @return Audio sample for use with an audio renderer.
+     */
     public int getOutput() {
         if (enabled) {
             return output;
@@ -107,6 +151,9 @@ public class Namco163SoundChannel extends APUChannel {
         return 0;
     }
     
+    /**
+     * Updates a single cycle timing based on frequency.
+     */
     private void updateFrequency() {
         freeze = (frequency == 0);
         
@@ -115,6 +162,9 @@ public class Namco163SoundChannel extends APUChannel {
         }
     }
     
+    /**
+     * Sets up a waveform buffer.
+     */
     private void setupWaveformBuffer() {
         waveformBuffer = new int[waveformLength];
         int raddress = waveformAddress >> 1;

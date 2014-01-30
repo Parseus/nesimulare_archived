@@ -307,4 +307,66 @@ public class SNROM extends Board {
             }
         }
     }
+    
+    public static class SXROM extends SNROM {
+        public SXROM(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+            super(prg, chr, trainer, haschrram);
+        }
+        
+        @Override
+        public void hardReset() {
+            super.hardReset();
+            
+            sram = new int[0x8000];
+        
+            super.switch16kPRGbank(0, 0x8000);
+            super.switch16kPRGbank(0xF, 0xC000);
+    }
+        
+        @Override
+        protected void write(int reg, int data) {
+            if (reg == 0) {
+                switch (register[0] & 3) {
+                    case 0:
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENA);
+                        break;
+                    case 1:
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.ONESCREENB);
+                        break;
+                    case 2:
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.VERTICAL);
+                        break;
+                    case 3:
+                        nes.ppuram.setMirroring(PPUMemory.Mirroring.HORIZONTAL);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            
+            if (Tools.getbit(register[0], 4)) {
+                super.switch4kCHRbank(register[1], 0x0000);
+                super.switch4kCHRbank(register[2], 0x1000);
+                
+                sramBank = (register[1] & 0xC) << 11;
+            } else {
+                super.switch8kCHRbank(register[1] >> 1);
+            }
+            
+            final int base = register[1] & 0x10;
+            wramEnabled = !Tools.getbit(register[3], 4);
+            
+            if (Tools.getbit(register[0], 3)) {
+                if (Tools.getbit(register[0], 2)) {
+                    super.switch16kPRGbank(base + (register[3] & 0xF), 0x8000);
+                    super.switch16kPRGbank(base + 0xF, 0xC000);
+                } else {
+                    super.switch16kPRGbank(base, 0x8000);
+                    super.switch16kPRGbank(base + (register[3] & 0xF), 0xC000);
+                }
+            } else {
+                super.switch32kPRGbank((register[3] & (0xF + base)) >> 1);
+            }
+        }
+    }
 }

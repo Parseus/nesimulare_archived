@@ -25,14 +25,30 @@
 package nesimulare.core.boards;
 
 /**
+ * Emulates a Jaleco JF-13 board (mapper 86).
+ * Sound control is not currently supported (need to find a cartridge and/or ADPCM samples).
  *
  * @author Parseus
  */
 public class Jaleco_JF_13 extends Board {
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Jaleco_JF_13(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Writes data to a given address within the range $6000-$7FFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writeSRAM(int address, int data) {
         if (address < 0x7000) {

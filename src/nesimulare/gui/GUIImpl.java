@@ -44,11 +44,11 @@ import nesimulare.core.Region;
 import nesimulare.core.input.Joypad;
 
 /**
+ * Main GUI class.
  *
  * @author Parseus
  */
 public class GUIImpl extends JFrame implements GUIInterface {
-    
     NES nes;
     Joypad joypad1, joypad2;
     private final Listener listener = new Listener();
@@ -91,6 +91,7 @@ public class GUIImpl extends JFrame implements GUIInterface {
         canvas = new Canvas();
         canvas.setSize(NES_WIDTH * screenScaleFactor, NES_HEIGHT * screenScaleFactor);
         canvas.setEnabled(false); //otherwise it steals input events.
+        
         // Add canvas to game window
         this.add(canvas);
         this.pack();
@@ -324,7 +325,6 @@ public class GUIImpl extends JFrame implements GUIInterface {
             }
             
             graphics.setColor(Color.DARK_GRAY);
-            graphics.drawString(this.getTitle(), 16, 16);
         } else {
             graphics.drawImage(screen, 0, 0, NES_WIDTH * screenScaleFactor, NES_HEIGHT * screenScaleFactor, null);
         }

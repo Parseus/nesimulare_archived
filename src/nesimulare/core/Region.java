@@ -25,10 +25,14 @@
 package nesimulare.core;
 
 /**
+ * Class storing regions and their timings.
  *
  * @author Parseus
  */
 public class Region {
+    /**
+     * Subclass storing region timings.
+     */
     public static class System {
         public String name;
         public int serial;
@@ -37,6 +41,16 @@ public class Region {
         public int ppu;
         public int apu;
         
+        /**
+         * Creates a new region.
+         * 
+         * @param name          Region name
+         * @param serial        Region number
+         * @param master        Master clock
+         * @param cpu           CPU cycles
+         * @param ppu           PPU cycles
+         * @param apu           APU cycles
+         */
         public System(String name, int serial, int master, int cpu, int ppu, int apu) {
             this.name = name;
             this.serial = serial;

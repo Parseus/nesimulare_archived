@@ -115,7 +115,7 @@ public class TxROM extends Board{
                 }
                 break;
             case 0xA000:
-                if (nes.getLoader().mirroring != PPUMemory.Mirroring.FOURSCREEN) {
+                if (nes.loader.mirroring != PPUMemory.Mirroring.FOURSCREEN) {
                     if (Tools.getbit(data, 0)) {
                         nes.ppuram.setMirroring(PPUMemory.Mirroring.HORIZONTAL);
                     } else {

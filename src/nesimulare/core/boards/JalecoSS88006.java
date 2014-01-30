@@ -28,6 +28,7 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates boards based on Jaleco SS88006 (mapper 18).
  *
  * @author Parseus
  */
@@ -40,10 +41,21 @@ public class JalecoSS88006 extends Board {
     private int irqMask = 0;
     private boolean irqEnabled = false;
     
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public JalecoSS88006(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -56,6 +68,12 @@ public class JalecoSS88006 extends Board {
         irqEnabled = false;
     }
     
+    /**
+     * Reads data from a given address within the range $6000-$7FFF.
+     * 
+     * @param address       Address to read data from
+     * @return              Read data
+     */
     @Override
     public int readSRAM(int address) {
         if (wramEnabled) {
@@ -65,6 +83,12 @@ public class JalecoSS88006 extends Board {
         return (address >> 8 & 0xe0);
     }
     
+    /**
+     * Writes data to a given address within the range $6000-$7FFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writeSRAM(int address, int data) {
         if (wramEnabled) {
@@ -72,6 +96,12 @@ public class JalecoSS88006 extends Board {
         }
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         switch (address) {
@@ -228,6 +258,9 @@ public class JalecoSS88006 extends Board {
         }
     }
     
+    /**
+     * Clocks IRQ every CPU cycle.
+     */
     @Override
     public void clockCPUCycle() {
         if (irqEnabled) {

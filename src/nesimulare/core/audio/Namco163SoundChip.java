@@ -27,6 +27,11 @@ import nesimulare.core.Region;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates Namco 163 sound chip, which consists of 8 wavetable channels.
+ * Only a few games use them all, though (when more channels are enabled,
+ * clocking slows down because the sound chip has to cycle through channels
+ * in order to clock them.
+ * @see Namco163SoundChannel
  *
  * @author Parseus
  */
@@ -38,6 +43,11 @@ public class Namco163SoundChip implements ExpansionSoundChip {
     public int enabledChannels = 0;
     private int soundRegister = 0;
 
+    /**
+     * Constructor for this class. Connects an emulated region with a given channel.
+     *
+     * @param system Emulated region
+     */
     public Namco163SoundChip(Region.System system) {
         channels = new Namco163SoundChannel[8];
         exram = new int[128];
@@ -51,6 +61,12 @@ public class Namco163SoundChip implements ExpansionSoundChip {
         }
     }
     
+    /**
+     * Reads a register from a given adress
+     * 
+     * @param address       Address to read a register from
+     * @return              Current sound register
+     */
     public int readData(int address) {
         final int value = exram[soundRegister & 0x7F];
         
@@ -61,7 +77,13 @@ public class Namco163SoundChip implements ExpansionSoundChip {
         return value;
     }
     
-    public void writeData(int address, int data) {
+    /**
+     * Writes data to a given register.
+     * 
+     * @param register      Register to write data to
+     * @param data          Register data
+     */
+    public void writeData(int register, int data) {
         if (soundRegister >= 0x40) {
             switch (soundRegister & 0x7F) {
                 case 0x40: channels[0].lowFrequency(data); break;
@@ -109,10 +131,20 @@ public class Namco163SoundChip implements ExpansionSoundChip {
         }
     }
     
+    /**
+     * Stores a sound register from given data.
+     * 
+     * @param data      Sound register
+     */
     public void writeRegister(int data) {
         soundRegister = data;
     }
     
+    /**
+     * Enables a selected amount of channels based on given data.
+     * 
+     * @param data Given data which are used to enable channels
+     */
     private void enableChannels(int data) {
         enabledChannels = ((data & 0x70) >> 4);
         channelIndex = 0;
@@ -128,8 +160,13 @@ public class Namco163SoundChip implements ExpansionSoundChip {
         }
     }
     
+    /**
+     * Generates an audio sample for use with an audio renderer.
+     *
+     * @return Audio sample for use with an audio renderer.
+     */
     @Override
-    public int mix() {
+    public int getOutput() {
         int output = 0;
         
         int enabledTemp = enabledChannels + 1;
@@ -149,6 +186,9 @@ public class Namco163SoundChip implements ExpansionSoundChip {
         return lpaccum << 2;
     }
 
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         for (int i = 0; i < 8; i++) {
@@ -161,6 +201,9 @@ public class Namco163SoundChip implements ExpansionSoundChip {
         soundRegister = 0;
     }
 
+    /**
+     * Performs a soft reset (pressing Reset button on a console).
+     */
     @Override
     public void softReset() {
         for (int i = 0; i < 8; i++) {
@@ -173,21 +216,36 @@ public class Namco163SoundChip implements ExpansionSoundChip {
         soundRegister = 0;
     }
 
+    /**
+     * Clocks envelopes for both pulse wave channels.
+     */
     @Override
     public void quarterFrame() {
         //Nothing to see here, move along
     }
 
+    /**
+     * Clocks length counters for both pulse wave channels.
+     * Also clocks envelopes.
+     */
     @Override
     public void halfFrame() {
         //Nothing to see here, move along
     }
 
+    /**
+     * Clocks channels depending on clocking length.
+     */
     @Override
     public void clockChannel(boolean clockingLength) {
         //Nothing to see here, move along
     }
 
+    /**
+     * Performs a given number of machine cycles.
+     * 
+     * @param cycles        Number of machine cycles.
+     */
     @Override
     public void cycle(int cycles) {
         channels[7 - (channelIndex = ((channelIndex + 1) & enabledChannels))].cycle(cycles);

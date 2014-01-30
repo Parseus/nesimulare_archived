@@ -31,11 +31,11 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.core.ppu.PPUTypes.*;
 
 /**
+ * Emulates the RP2C02/RP2C07 graphics synthesizer.
  *
  * @author Parseus
  */
 public class PPU extends ProcessorBase {
-
     NES nes;
     CPU cpu;
     PPUMemory ppuram;
@@ -81,8 +81,8 @@ public class PPU extends ProcessorBase {
     private int spriteState = 0;
     private boolean oddFrame;
     private boolean toggle;
-    //Least significant bits previously written into a PPU register
-    private int latch;
+   
+    private int latch; //Least significant bits previously written into a PPU register
     private int chr;
     private int grayScale;
     private int emphasis;
@@ -92,19 +92,19 @@ public class PPU extends ProcessorBase {
     private boolean sprite0hit, spriteOverflow;
     private boolean spriteReset;
 
-    //NMI and VBlank
+    /* NMI and VBlank */
     private boolean nmiOutput;
     private boolean nmiRequest;
     private boolean suppressVBlank;
 
-    //Timing
+    /* Timing */
     private int startNMI;
     private int endNMI;
     private int endFrame;
     public int hclock = 0;
     public int vclock = 0;
 
-    //OAM
+    /* OAM */
     private int oamAddress;
     private int[] oam = new int[256];
     private int oamDMAAddress = 0;
@@ -112,6 +112,14 @@ public class PPU extends ProcessorBase {
     private int oamCount = 0;
     private int oamSlot = 0;
 
+    /**
+     * Constructor for this class.
+     * 
+     * @param system        Emulated region
+     * @param nes           Emulation core
+     * @param cpu           Emulate CPU
+     * @param ppuram        Internal PPU memory
+     */
     public PPU(nesimulare.core.Region.System system, final NES nes, final CPU cpu, final PPUMemory ppuram) {
         super(system);
         region.singleCycle = system.ppu;
@@ -121,11 +129,17 @@ public class PPU extends ProcessorBase {
         this.nes = nes;
     }
 
+    /**
+     * Initializes PPU.
+     */
     @Override
     public final void initialize() {
         hardReset();
     }
 
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         setRegion();
@@ -168,6 +182,9 @@ public class PPU extends ProcessorBase {
         oamSlot = 0;
     }
 
+    /**
+     * Sets frame and NMI timing depending on the emulated region.
+     */
     private void setRegion() {
         switch (system.serial) {
             case 0:
@@ -194,42 +211,69 @@ public class PPU extends ProcessorBase {
         }
     }
 
+    /**
+     * Reads an address used for a later background fetching.
+     */
     private void fetchNametable_0() {
         fetch.address = 0x2000 | (scroll.address & 0xFFF);
         nes.board.updateAddressLines(fetch.address);
     }
 
+    /**
+     * Reads a nametable used for a later background fetching.
+     */
     private void fetchNametable_1() {
         fetch.nametable = ppuram.read(fetch.address);
     }
 
+    /**
+     * Reads an address used for a later background fetching.
+     */
     private void fetchAttribute_0() {
         fetch.address = 0x23C0 | (scroll.address & 0xC00) | (scroll.address >> 4 & 0x38) | (scroll.address >> 2 & 0x7);
         nes.board.updateAddressLines(fetch.address);
     }
 
+    /**
+     * Reads an attribute used for a later background fetching.
+     */
     private void fetchAttribute_1() {
         fetch.attribute = (ppuram.read(fetch.address)) >> ((scroll.address >> 4 & 0x04) | (scroll.address & 0x02));
     }
 
+    /**
+     * Reads an address for a later background fetching.
+     */
     private void fetchBit0_0() {
         fetch.address = background.address | (fetch.nametable << 4) | (scroll.address >> 12 & 0x7);
         nes.board.updateAddressLines(fetch.address);
     }
 
+    /**
+     * Reads a bit 0 for a later background fetching.
+     */
     private void fetchBit0_1() {
         fetch.bit0 = ppuram.read(fetch.address);
     }
 
+    /**
+     * Reads an address for a later background fetching.
+     */
     private void fetchBit1_0() {
         fetch.address = background.address | (fetch.nametable << 4) | 8 | (scroll.address >> 12 & 0x7);
         nes.board.updateAddressLines(fetch.address);
     }
 
+    /**
+     * Fetches bit 1 for a later background fetching.
+     */
     private void fetchBit1_1() {
         fetch.bit1 = ppuram.read(fetch.address);
     }
 
+    /**
+     * Reads an address for a later sprite fetching.
+     */
     private void spriteFetchBit0_0() {
         final int index = hclock >> 3 & 7;
         final int comparator = (vclock - buffer[index].y) ^ (Tools.getbit(buffer[index].attribute, 7) ? 0x0F : 0x00);
@@ -244,6 +288,9 @@ public class PPU extends ProcessorBase {
         nes.board.updateAddressLines(spriteFetch.address);
     }
 
+    /**
+     * Reads a bit 0 for a later sprite fetching.
+     */
     private void spriteFetchBit0_1() {
         spriteFetch.bit0 = ppuram.read(spriteFetch.address);
 
@@ -253,11 +300,17 @@ public class PPU extends ProcessorBase {
 
     }
 
+    /**
+     * Reads an address for a later sprite fetching.
+     */
     private void spriteFetchBit1_0() {
         spriteFetch.address = spriteFetch.address | 0x8;
         nes.board.updateAddressLines(spriteFetch.address);
-    }
+    }   
 
+    /**
+     * Reads a bit 1 for a later sprite fetching.
+     */
     private void spriteFetchBit1_1() {
         spriteFetch.bit1 = ppuram.read(spriteFetch.address);
 
@@ -268,10 +321,37 @@ public class PPU extends ProcessorBase {
         spriteFetch.attribute = buffer[hclock >> 3 & 7].attribute;
     }
 
+    /**
+     * Reads data from a given PPU register.
+     * 
+     * @param address       Register to read data from
+     * @return              Read data
+     */
     public final int read(final int address) {
         switch (address & 7) {
 
-            //PPUSTATUS
+            /**
+             * $2002: PPUSTATUS
+             * 
+             * 7654 3210
+             * |||| ||||
+             * |||+-++++- Least significant bits previously written into a PPU register
+             * |||        (due to register not being updated for this address)
+             * ||+------- Sprite overflow. The intent was for this flag to be set
+             * ||         whenever more than eight sprites appear on a scanline, but a
+             * ||         hardware bug causes the actual behavior to be more complicated
+             * ||         and generate false positives as well as false negatives; see
+             * ||         PPU sprite evaluation. This flag is set during sprite
+             * ||         evaluation and cleared at dot 1 (the second dot) of the
+             * ||         pre-render line.
+             * |+-------- Sprite 0 Hit.  Set when a nonzero pixel of sprite 0 overlaps
+             * |          a nonzero background pixel; cleared at dot 1 of the pre-render
+             * |          line.  Used for raster timing.
+             * +--------- Vertical blank has started (0: not in VBLANK; 1: in VBLANK).
+             *            Set at dot 1 of line 241 (the line *after* the post-render
+             *            line); cleared after reading $2002 and at dot 1 of the
+             *            pre-render line.
+             */
             case 2:
                 if (vclock == startNMI) {
                     if (hclock == 0) {
@@ -299,11 +379,15 @@ public class PPU extends ProcessorBase {
 
                 return latch = data;
 
-            //OAMDATA
+            /**
+             * $2004: OAMDATA
+             */
             case 4:
                 return latch = oam[oamAddress & 0xFF];
 
-            //PPUDATA
+            /**
+             * $2007: PPUDATA
+             */
             case 7:
                 int tmp;
 
@@ -326,15 +410,40 @@ public class PPU extends ProcessorBase {
         }
     }
 
+    /**
+     * Writes data to a given register
+     * 
+     * @param address       Register to write data to
+     * @param data          Written data
+     */ 
     public final void write(final int address, final int data) {
-        //OAM DMA
+        /**
+         * $4014: OAM DMA
+         */
         if (address == 0x4014) {
             oamDMAAddress = (data << 8);
             cpu.RDY(CPU.DMATypes.OAM);
         } else {
             switch (address & 7) {
 
-                //PPUCTRL
+                /**
+                 * $2000: PPUCTRL
+                 * 
+                 * 7654 3210
+                 * |||| ||||
+                 * |||| ||++- Base nametable address
+                 * |||| ||    (0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
+                 * |||| |+--- VRAM address increment per CPU read/write of PPUDATA
+                 * |||| |     (0: add 1, going across; 1: add 32, going down)
+                 * |||| +---- Sprite pattern table address for 8x8 sprites
+                 * ||||       (0: $0000; 1: $1000; ignored in 8x16 mode)
+                 * |||+------ Background pattern table address (0: $0000; 1: $1000)
+                 * ||+------- Sprite size (0: 8x8; 1: 8x16)
+                 * |+-------- PPU master/slave select
+                 * |          (0: read backdrop from EXT pins; 1: output color on EXT pins)
+                 * +--------- Generate an NMI at the start of the
+                 *            vertical blanking interval (0: off; 1: on)
+                 */
                 case 0:
                     scroll.temp = (scroll.temp & ~0x0C00) | (data << 10 & 0x0C00);
                     scroll.step = Tools.getbit(data, 2) ? 0x20 : 0x1;
@@ -354,7 +463,20 @@ public class PPU extends ProcessorBase {
                     }
                     break;
 
-                //PPUMASK
+                /**
+                 * $2001: PPUMASK
+                 * 
+                 * 76543210
+                 * ||||||||
+                 * |||||||+- Grayscale (0: normal color; 1: produce a monochrome display)
+                 * ||||||+-- 1: Show background in leftmost 8 pixels of screen; 0: Hide
+                 * |||||+--- 1: Show sprites in leftmost 8 pixels of screen; 0: Hide
+                 * ||||+---- 1: Show background
+                 * |||+----- 1: Show sprites
+                 * ||+------ Intensify reds (and darken other colors)
+                 * |+------- Intensify greens (and darken other colors)
+                 * +-------- Intensify blues (and darken other colors)
+                 */
                 case 1:
                     grayScale = Tools.getbit(data, 0) ? 0x30 : 0x3F;
                     emphasis = ((data & 0xE0) << 1) & 0xFF;
@@ -365,12 +487,16 @@ public class PPU extends ProcessorBase {
                     sprites.enabled = Tools.getbit(data, 4);
                     break;
 
-                //OAMADDR
+                /**
+                 * $2003: OAMADDR
+                 */
                 case 3:
                     oamAddress = data;
                     break;
 
-                //OAMDATA
+                /**
+                 * $2004: OAMDATA
+                 */
                 case 4:
                     if ((oamAddress & 0x03) == 0x02) {
                         oam[oamAddress++] = (data & 0xE3);
@@ -381,7 +507,9 @@ public class PPU extends ProcessorBase {
                     oamAddress &= 0xFF;
                     break;
 
-                //PPUSCROLL
+                /**
+                 * $2005: PPUSCROLL
+                 */
                 case 5:
                     if (toggle) {
                         scroll.temp = (scroll.temp & ~0x001F) | (data >> 3 & 0x001F);
@@ -393,7 +521,9 @@ public class PPU extends ProcessorBase {
                     toggle ^= true;
                     break;
 
-                //PPUADDR
+                /**
+                 * $2006: PPUADDR
+                 */
                 case 6:
                     if (toggle) {
                         scroll.temp = (scroll.temp & ~0xFF00) | (data << 8 & 0x3F00);
@@ -406,7 +536,9 @@ public class PPU extends ProcessorBase {
                     toggle ^= true;
                     break;
 
-                //PPUDATA
+                /**
+                 * $2007: PPUDATA
+                 */
                 case 7:
                     ppuram.write(scroll.address, data);
 
@@ -423,6 +555,9 @@ public class PPU extends ProcessorBase {
         latch = data;
     }
 
+    /**
+     * Synthesizes background pixels.
+     */
     private void synthesizeBackgroundPixels() {
         int position = (hclock + 9) % 336;
 
@@ -431,6 +566,9 @@ public class PPU extends ProcessorBase {
         }
     }
 
+    /**
+     * Synthesizes sprite pixels.
+     */
     private void synthesizeSpritePixels() {
         final int index = hclock >> 3 & 7;
 
@@ -455,14 +593,23 @@ public class PPU extends ProcessorBase {
         }
     }
 
+    /**
+     * Fetches OAM data for a sprite evaluation.
+     */
     private void evaluateFetch() {
         oamData = oam[oamAddress];
     }
 
+    /**
+     * Resets OAM data for a sprite evaluation.
+     */
     private void evaluateReset() {
         oamData = 0xFF;
     }
 
+    /**
+     * Sets or clears OAM data for a sprite evaluation.
+     */
     private void oamFetch() {
         if (spriteReset) {
             evaluateReset();
@@ -471,6 +618,9 @@ public class PPU extends ProcessorBase {
         }
     }
 
+    /**
+     * Initializes sprite evaluation.
+     */
     private void beginEvaluation() {
         spriteReset = false;
         spriteState = 1;
@@ -478,6 +628,9 @@ public class PPU extends ProcessorBase {
         oamCount = 0;
     }
 
+    /**
+     * Resets sprite evaluation.
+     */
     private void resetEvaluation() {
         spriteReset = true;
         spriteState = 0;
@@ -488,6 +641,9 @@ public class PPU extends ProcessorBase {
         sprites.pixels = new int[256];
     }
 
+    /**
+     * Evaluates sprites.
+     */
     private void evaluateSprites() {
         int comparator;
 
@@ -619,6 +775,9 @@ public class PPU extends ProcessorBase {
         }
     }
 
+    /**
+     * Performs an individual machine cycle.
+     */
     @Override
     public void cycle() {
         nes.board.clockPPUCycle();
@@ -860,26 +1019,60 @@ public class PPU extends ProcessorBase {
         }
     }
 
+    /**
+     * Checks if PPU is currently rendering.
+     * 
+     * @return      True: PPU is currently rendering background and/or sprites.
+     *              False: PPU is not currently rendering anything.
+     */
     public final boolean isRendering() {
         return (background.enabled || sprites.enabled);
     }
 
+    /**
+     * Checks if PPU is currently fetching background.
+     * 
+     * @return      True: PPU is currently fetching background
+     *              False: PPU is not currently rendering background
+     */
     public final boolean isBackgroundFetching() {
-        return (hclock < 256 | hclock >= 320);
+        return (hclock < 256 || hclock >= 320);
     }
 
+    /**
+     * Checks if current sprite size is 8x16.
+     * 
+     * @return      True: Current sprite size is 8x16.
+     *              False: Current sprite size is 8x8.
+     */
     public final boolean isOAMSize() {
         return (sprites.rasters == 0x10);
     }
 
+    /**
+     * Checks if PPU is currently renering a scanline.
+     * 
+     * @return      True: PPU is currently rendering a scanline
+     *              False: PPu is not currently rendering a scanline
+     */
     public final boolean isRenderingScanline() {
         return (vclock < 240);
     }
 
+    /**
+     * Returns a pixel with (x, y) coordinations.
+     * 
+     * @param x     Pixel on a X axis
+     * @param y     Pixel on a Y axis
+     * @return      Pixel with (x, y) coorinations
+     */
     public final int getPixel(int x, int y) {
         return screen[y][x];
     }
 
+    /**
+     * Performs OAM DMA from a specified address.
+     */
     public void oamTransfer() {
         for (int i = 0; i < 256; i++) {
             final int data = cpu.read(oamDMAAddress);
@@ -890,6 +1083,9 @@ public class PPU extends ProcessorBase {
         }
     }
 
+    /**
+     * Renders a pixel.
+     */
     private void renderPixel() {
         final int bckgr = ppuram.read(0x3F00);
         screen[vclock][hclock] = colors[paletteIndexes[bckgr & grayScale | emphasis & 0x7F]];
@@ -928,6 +1124,11 @@ public class PPU extends ProcessorBase {
         }
     }
 
+    /**
+     * Sets up an internal color palette.
+     * 
+     * @param colors        An array with a color palette
+     */
     public void setupPalette(int[] colors) {
         this.colors = colors.clone();
     }

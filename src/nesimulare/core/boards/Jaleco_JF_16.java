@@ -27,16 +27,28 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates Jaleco JF-16 and Irem Holy Diver boards (mapper 78).
  *
  * @author Parseus
  */
 public class Jaleco_JF_16 extends Board {
     private boolean jf16 = false;
     
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Jaleco_JF_16(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Initializes the board.
+     */
     @Override
     public void initialize() {
         super.initialize();
@@ -44,6 +56,9 @@ public class Jaleco_JF_16 extends Board {
         jf16 = "BC6F5A884FD31FE6B4439E83AD6C2A29D038E545".equals(nes.loader.sha1);
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -51,6 +66,12 @@ public class Jaleco_JF_16 extends Board {
         super.switch16kPRGbank((prg.length - 0x4000) >> 14, 0xC000);
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         if (jf16) {
@@ -58,6 +79,8 @@ public class Jaleco_JF_16 extends Board {
         } else {
             nes.ppuram.setMirroring(Tools.getbit(data, 3) ? PPUMemory.Mirroring.VERTICAL : PPUMemory.Mirroring.HORIZONTAL);
         }
+        
+        //For homebrew mirroring behaviour is set by default to Holy Diver board.
         
         super.switch16kPRGbank(data & 0x7, 0x8000);
         super.switch8kCHRbank((data & 0xF0) >> 4);

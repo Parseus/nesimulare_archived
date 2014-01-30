@@ -25,15 +25,48 @@
 package nesimulare.core.audio;
 
 /**
+ * An interface class for additional sound chips (for Famicom).
  *
  * @author Parseus
  */
 public interface ExpansionSoundChip {
-    int mix();
+    /**
+     * Generates an audio sample for use with an audio renderer.
+     *
+     * @return Audio sample for use with an audio renderer.
+     */
+    int getOutput();
+    
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     void hardReset();
+    
+    /**
+     * Performs a soft reset (pressing Reset button on a console).
+     */
     void softReset();
+    
+    /**
+     * Clocks length counters and sweep units.
+     */
     void quarterFrame();
+    
+    /**
+     * Clocks envelopes and triangle's linear counter.
+     * Also clocks length counters and sweep units.
+     */
     void halfFrame();
+    
+    /**
+     * Clocks a channel depending on clocking length.
+     */
     void clockChannel(boolean clockingLength);
+    
+    /**
+     * Performs a given number of machine cycles.
+     * 
+     * @param cycles        Number of machine cycles.
+     */
     void cycle(int cycles);
 }

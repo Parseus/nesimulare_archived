@@ -27,14 +27,13 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
- * Emulates a Caltron 6-in-1 multicart (mapper 41).
+ * Emulates a Maxi 15 multicart (mapper 234).
  *
  * @author Parseus
  */
-public class MLT_Caltron extends Board {
-    private int chrBank = 0;
-    private boolean innerBankSelect = true;
-    
+public class MLT_Maxi15 extends Board {
+    private int register[] = new int[2];
+
     /**
      * Constructor for this class.
      *
@@ -43,39 +42,51 @@ public class MLT_Caltron extends Board {
      * @param trainer Trainer
      * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
      */
-    public MLT_Caltron(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+    public MLT_Maxi15(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
-    
+
     /**
      * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
      */
     @Override
     public void hardReset() {
         super.hardReset();
-        
-        chrBank = 0;
-        innerBankSelect = true;
+
+        register = new int[2];
+    }
+
+    /**
+     * Performs a soft reset (pressing Reset button on a console).
+     */
+    @Override
+    public void softReset() {
+        register = new int[2];
     }
     
     /**
-     * Writes data to a given address within the range $6000-$7FFF.
+     * Reads data from a given address within the range $8000-$FFFF.
      * 
-     * @param address       Address to write data to
-     * @param data          Written data
+     * @param address       Address to read data from
+     * @return              Read data
      */
     @Override
-    public void writeSRAM(int address, int data) {
-        if (address <= 0x67FF) {
-            nes.ppuram.setMirroring(Tools.getbit(address, 5) ? PPUMemory.Mirroring.HORIZONTAL : PPUMemory.Mirroring.VERTICAL);
-            innerBankSelect = Tools.getbit(address, 2);
-            chrBank = (chrBank & 3) | ((address >> 1) & 0xC);     
-        
-            super.switch32kPRGbank(address & 0x7);
-            super.switch8kCHRbank(chrBank);
+    public int readPRG(int address) {
+        if (address >= 0xFF80 && address <= 0xFF9F) {
+            final int data = prg[0x6000 + address - 0xE000];
+            writePRG(address, data);
+            
+            return data;
+        } else if (address >= 0xFFE8 && address <= 0xFFF7) {
+            final int data = prg[0x6000 + address - 0xE000];
+            writePRG(address, data);
+            
+            return data;
         }
+        
+        return super.readPRG(address);
     }
-    
+
     /**
      * Writes data to a given address within the range $8000-$FFFF.
      * 
@@ -84,9 +95,19 @@ public class MLT_Caltron extends Board {
      */
     @Override
     public void writePRG(int address, int data) {
-        if (innerBankSelect) {
-            chrBank = (chrBank & 0xC) | (data & 0x3);
-            super.switch8kCHRbank(chrBank);
+        if (address >= 0xFF80 && address <= 0xFF9F) {
+            if ((register[0] & 0x3F) == 0) {
+                register[0] = data;
+                nes.ppuram.setMirroring(Tools.getbit(data, 7) ? PPUMemory.Mirroring.HORIZONTAL : PPUMemory.Mirroring.VERTICAL);
+                super.switch32kPRGbank((register[0] & 0xE) | (register[register[0] >> 6 & 0x1] & 0x1));
+                super.switch8kCHRbank((register[0] << 2 & (register[0] >> 4 & 0x4 ^ 0x3C)) | (register[1] >> 4 & (register[0] >> 4 & 0x4 | 0x3)));
+            }
+        } else if (address >= 0xFFE8 && address <= 0xFFF7) {
+            register[1] = data;
+            super.switch32kPRGbank((register[0] & 0xE) | (register[register[0] >> 6 & 0x1] & 0x1));
+            super.switch8kCHRbank((register[0] << 2 & (register[0] >> 4 & 0x4 ^ 0x3C)) | (register[1] >> 4 & (register[0] >> 4 & 0x4 | 0x3)));
+        } else {
+            super.writePRG(address, data);
         }
     }
 }

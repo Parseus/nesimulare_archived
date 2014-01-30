@@ -40,7 +40,7 @@ public class Mapper182 extends TxROM {
     public void writePRG(int address, int data) {
         switch (address & 0xE001) {
             case 0x8001:
-                if (nes.getLoader().mirroring != PPUMemory.Mirroring.FOURSCREEN) {
+                if (nes.loader.mirroring != PPUMemory.Mirroring.FOURSCREEN) {
                     if (Tools.getbit(data, 0)) {
                         nes.ppuram.setMirroring(PPUMemory.Mirroring.HORIZONTAL);
                     } else {

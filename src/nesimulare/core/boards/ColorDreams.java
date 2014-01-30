@@ -25,16 +25,37 @@
 package nesimulare.core.boards;
 
 /**
+ * Emulates a Color Dreams board (mapper 11).
  *
  * @author Parseus
  */
 public class ColorDreams extends Board { 
+    /**
+     * Constructor for this class.
+     * 
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM
+     *                  False: PCB contains CHR-ROM
+     */
     public ColorDreams(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
     @Override
     public void writePRG(int address, int data) {
+        /**
+         * $8000-$FFFF: Bank select
+         * 7  bit  0
+         * ---- ----
+         * CCCC LLPP
+         * |||| ||||
+         * |||| ||++- Select 32 KB PRG ROM bank for CPU $8000-$FFFF
+         * |||| ++--- Used for lockout defeat (not important for emulation)
+         * ++++------ Select 8 KB CHR ROM bank for PPU $0000-$1FFF
+         */
+        
         super.switch32kPRGbank(data & 0xF);
         super.switch8kCHRbank((data >> 4) & 0xF);
     }

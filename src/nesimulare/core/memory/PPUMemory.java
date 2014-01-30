@@ -54,7 +54,7 @@ public final class PPUMemory extends Memory {
         super.initialize();
         
         hardReset();
-        final int mapper = nes.getLoader().mapperNumber;
+        final int mapper = nes.loader.mapperNumber;
         board = (mapper == 5 || mapper == 19 || mapper == 68 || mapper == 90 || mapper == 95 || mapper == 118 || mapper == 207);
     }
     
@@ -132,7 +132,7 @@ public final class PPUMemory extends Memory {
     @Override
     public void hardReset() {
         nmtBank = new int[4];
-        setMirroring(nes.getLoader().mirroring);
+        setMirroring(nes.loader.mirroring);
         
         /* Each NES has a different palette on power-on. This palette is still 
          * used as a 'canonical' palette for emulation by several emulators, though.*/

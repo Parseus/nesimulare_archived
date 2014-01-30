@@ -24,14 +24,29 @@
 package nesimulare.core.boards;
 
 /**
+ * Emulates Jaleco JF-11 and Jaleco JF-14 boards (mapper 140).
  *
  * @author Parseus
  */
 public class Jaleco_JF_11_14 extends Board {
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Jaleco_JF_11_14(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Writes data to a given address within the range $6000-$7FFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writeSRAM(int address, int data) {
         super.switch32kPRGbank((data >> 4) & 0x3);

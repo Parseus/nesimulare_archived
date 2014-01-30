@@ -60,7 +60,7 @@ public class FrameLimiter extends Thread {
         elapsedTime = (System.nanoTime() / 1000000.0) - lastFrameTime;
         sleepTime = (framePeriod - elapsedTime);
         
-        frameTime = enabled ? fps - sleepTime : 1000 / elapsedTime;
+        frameTime = enabled ? fps - elapsedTime : 1000 / elapsedTime;
         
         if (enabled) {
             if (sleepTime > 0) {

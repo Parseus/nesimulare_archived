@@ -25,16 +25,28 @@
 package nesimulare.core.boards;
 
 /**
+ * Emulates mapper 60.
  *
  * @author Parseus
  */
 public class Mapper060 extends Board {
     private int menu = 0;
     
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Mapper060(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
 
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -42,6 +54,9 @@ public class Mapper060 extends Board {
         menu = 0;
     }
     
+    /**
+     * Performs a soft reset (pressing Reset button on a console).
+     */
     @Override
     public void softReset() {
         menu = (menu + 1) & 0x3;

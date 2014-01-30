@@ -1,4 +1,4 @@
-/*
+ /*
  * The MIT License
  *
  * Copyright 2013-2014 Parseus.
@@ -24,17 +24,19 @@
 
 package nesimulare.core.boards;
 
-import nesimulare.core.memory.PPUMemory;
-import nesimulare.gui.Tools;
+import nesimulare.core.cpu.CPU;
 
 /**
  *
  * @author Parseus
  */
-public class VRC1 extends Board {
-    private int chrRegister[] = new int[2];
+public class Mapper142 extends Board {
+    private int control = 0;
+    private int irqCounter = 0;
+    private int prgBank = 0;
+    private boolean irqEnabled = false;
     
-    public VRC1(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
+    public Mapper142(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
@@ -42,46 +44,59 @@ public class VRC1 extends Board {
     public void hardReset() {
         super.hardReset();
         
-        super.switch8kPRGbank((prg.length - 0x2000) >> 13, 0xE000);
+        control = 0;
+        irqCounter = 0;
+        prgBank = 0;
+        irqEnabled = false;
+    }
+    
+    @Override
+    public int readSRAM(int address) {
+        return prg[(prgBank << 13) | (address & 0x1FFF)];
     }
     
     @Override
     public void writePRG(int address, int data) {
         switch (address & 0xF000) {
             case 0x8000:
-                super.switch8kPRGbank(data, 0x8000);
+                irqCounter = (irqCounter & 0xFFF0) | (data & 0xF);
                 break;
             case 0x9000:
-                chrRegister[0] = (chrRegister[0] & 0xF) | ((data & 0x2) << 3);
-                chrRegister[1] = (chrRegister[1] & 0xF) | ((data & 0x4) << 2);
-                
-                if (nes.loader.mirroring != PPUMemory.Mirroring.FOURSCREEN) {
-                    nes.ppuram.setMirroring(Tools.getbit(data, 0) ? PPUMemory.Mirroring.HORIZONTAL : PPUMemory.Mirroring.VERTICAL);
-                }
-            
-                setupCHR();
+                irqCounter = (irqCounter & 0xFF0F) | ((data & 0xF) << 4);
                 break;
             case 0xA000:
-                super.switch8kPRGbank(data, 0xA000);
+                irqCounter = (irqCounter & 0xF0FF) | ((data & 0xF) << 8);
                 break;
+            case 0xB000:
+                irqCounter = (irqCounter & 0x0FFF) | ((data & 0xF) << 12);
+                break;  
             case 0xC000:
-                super.switch8kPRGbank(data, 0xC000);
+                irqEnabled = (data & 0xF) == 0xF;
+                nes.cpu.interrupt(CPU.InterruptTypes.BOARD, false);
                 break;
             case 0xE000:
-                chrRegister[0] = (chrRegister[0] & 0x10) | (data & 0xF);
-                setupCHR();
+                control = data;
                 break;
             case 0xF000:
-                chrRegister[0] = (chrRegister[0] & 0x10) | (data & 0xF);
-                setupCHR();
+                final int addr = (control & 0xF) - 1;
+                
+                if (addr < 3) {
+                    super.switch8kPRGbank(data, addr << 13);
+                } else if (address < 4) {
+                    prgBank = data;
+                }
                 break;
             default:
                 break;
         }
     }
     
-    private void setupCHR() {
-        super.switch4kCHRbank(chrRegister[0], 0x0000);
-        super.switch4kCHRbank(chrRegister[1], 0x1000);
+    @Override
+    public void clockCPUCycle() {
+        if (irqEnabled && irqCounter++ == 0xFFFF) {
+            irqEnabled = false;
+            irqCounter = 0;
+            nes.cpu.interrupt(CPU.InterruptTypes.BOARD, true);
+        }
     }
 }

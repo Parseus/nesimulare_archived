@@ -21,7 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package nesimulare.gui;
 
 import java.io.FileInputStream;
@@ -32,8 +31,14 @@ import nesimulare.core.Region;
 import nesimulare.core.boards.*;
 import nesimulare.core.boards.SNROM.SOROM;
 import nesimulare.core.boards.SNROM.SUROM;
+import nesimulare.core.boards.SNROM.SXROM;
 import nesimulare.core.memory.PPUMemory;
 
+/**
+ * Class loading ROM files.
+ * 
+ * @author Parseus
+ */
 public class ROMLoader {
     private final GUIImpl gui;
     public Board board;
@@ -41,14 +46,14 @@ public class ROMLoader {
     private final int[] rom;
     private int[] header;
     public String sha1;
-    
+
     public int prgromSize;
     public int chrromSize;
-    private int prgramSize;
-    private int chrramSize;
+    public int prgramSize;
+    public int chrramSize;
     private int prgOffset;
     private int chrOffset;
-    
+
     public PPUMemory.Mirroring mirroring;
     public int mapperNumber;
     public int submapper;
@@ -58,163 +63,107 @@ public class ROMLoader {
     private boolean hasTrainer = false;
     public boolean savesram = false;
     private boolean haschrram = false;
-    
+
+    /**
+     * Constructor for this class.
+     * 
+     * @param filename      ROM filename
+     * @param gui           GUI loading the ROM
+     */
     public ROMLoader(String filename, GUIImpl gui) {
         this.gui = gui;
         rom = Tools.readfromfile(filename);
         this.filename = filename;
         sha1 = calculateHash(filename);
     }
-    
+
+    /**
+     * Reads a file header.
+     * 
+     * @param len       Header length
+     */
     private void readHeader(int len) {
         header = new int[len];
         System.arraycopy(rom, 0, header, 0, len);
     }
 
-    public void parseInesHeader() {
-        readHeader(16);
-        // decode iNES 1.0 headers
-        // 1st 4 bytes : $4E $45 $53 $1A
-        if (header[0] != 0x4E || header[1] != 0x45 || header[2] != 0x53 || header[3] != 0x1A) {
-            
-            // not a valid file
-            if (header[0] == 'U') {
-                gui.messageBox("This is a UNIF file with the wrong extension");
-                return;
-            }
-            
-            gui.messageBox("Invalid iNES header!");
-            return;
-        }
-        
-        if (header[11] + header[12] + header[13] + header[14] + header[15] != 0) {
-            gui.messageBox("Corrupted iNES header!");
-            return;
-        }
-        
-        prgromSize = 16384 * header[4];
-        chrromSize = 8192 * header[5];
-        hasTrainer = Tools.getbit(header[6], 2);
-        mapperNumber = ((header[6] & 0xF0) >> 4) | (header[7] & 0xF0);
-        
-        savesram = Tools.getbit(header[6], 1);
-        
-        switch (header[6] & 0x9) {
-            case 0x0:
-                mirroring = PPUMemory.Mirroring.HORIZONTAL;
-                break;
-            case 0x1:
-                mirroring = PPUMemory.Mirroring.VERTICAL;
-                break;
-            case 0x8: case 0x9:
-                mirroring = PPUMemory.Mirroring.FOURSCREEN;
-                break;
-            default:
-                break;
-        }
-        
-        prgramSize = (header[8] == 0) ? 8192 : 8192 * header[8];
-        
-        if ((header[7] & 0x0C) == 0x08) {
-            //iNES 2.0
-            inesVersion = 2;
-            
-            mapperNumber |= (header[8] & 0x0F) << 8;
-            submapper = (header[8] & 0xF0) << 4;
-            prgromSize |= (header[9] & 0x0F) << 8;
-            chrromSize |= (header[9] & 0xF0) << 4;
-            prgramSize = header[10];
-            chrramSize = header[11];
-            tvmode = header[12];
-            vssystem = header[13];
-            
-            gui.nes.setRegion(tvmode == 0 ? Region.NTSC : Region.PAL);
-            
-            if (((prgramSize & 0xF) == 0xF) || ((prgramSize & 0xF0) == 0xF0)) {
-                gui.messageBox("Invalid PRG RAM size specified!");
-                return;
-            }
-            
-            if (((chrramSize & 0xF) == 0xF) || ((chrramSize & 0xF0) == 0xF0)) {
-                gui.messageBox("Invalid CHR RAM size specified!");
-                return;
-            }
-            
-            if (((chrramSize & 0xF0) != 0)) {
-               gui.messageBox("TODO: Implement battery-backed CHR RAM");
-            }
-            
-            if (header[14] != 0) {
-                gui.messageBox("Unrecognized data found at header offset 14!");
-                return;
-            }
-            
-            if (header[15] != 0) {
-                gui.messageBox("Unrecognized data found at header offset 15!");
-                return;
-            }
-        } else {
-            for (int i = 9; i < 16; i++) {
-                if (header[i] != 0) {
-                    gui.messageBox("Byte " + i + " contains invalid data!");
-                    break;
-                }
-            }
-        } 
-        
-        prgOffset = 0;
-        chrOffset = prgromSize;
-    }
-
+    /**
+     * Checks if a ROM contains SRAM
+     * 
+     * @return      True: ROM contains SRAM
+     *              False: ROM doesn't contain SRAM
+     */
     public final boolean hasSRAM() {
         return savesram;
     }
-    
+
+    /**
+     * Calculates a SHA-1 hash of ROM (without a header).
+     * 
+     * @param fileName      ROM filename
+     * @return              SHA-1 hash
+     */
     public final String calculateHash(String fileName) {
         try {
             final MessageDigest md = MessageDigest.getInstance("SHA1");
-            
+
             try (FileInputStream fis = new FileInputStream(fileName)) {
                 fis.skip(16);
                 final byte[] dataBytes = new byte[1024];
-                
+
                 int nread;
-                
+
                 while ((nread = fis.read(dataBytes)) != -1) {
                     md.update(dataBytes, 0, nread);
                 }
             }
-            
+
             final byte[] mdbytes = md.digest();
             final StringBuilder sb = new StringBuilder("");
             for (int i = 0; i < mdbytes.length; i++) {
                 sb.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
             }
-            
+
             return sb.toString();
         } catch (IOException | NoSuchAlgorithmException ex) {
             gui.messageBox(ex.getMessage());
             return null;
         }
     }
-    
+
+    /**
+     * Loads ROM.
+     * 
+     * @return      Mapper used by ROM
+     */
     public Board loadROM() {
-        parseInesHeader();
+        board = loadINESFile();
         
-        haschrram = (chrromSize == 0);
-        
-        if (haschrram) {
-            if (chrramSize == 0) {
-                chrromSize = 0x2000;
-            } else {
-                chrromSize = chrramSize;
+        return board;
+    }
+    
+    /**
+     * Parses and loads a file with an iNES header.
+     * 
+     * @return 
+     */
+    private Board loadINESFile() {
+        new INESParser();
+
+        if (inesVersion == 2) {
+            haschrram = (header[11] != 0);
+        } else {
+            haschrram = (chrromSize == 0);
+            
+            if (haschrram) {
+                chrramSize = chrromSize = 0x2000;
             }
         }
-        
+
         final int[] prgrom = new int[prgromSize];
         final int[] chrrom = new int[chrromSize];
         int[] trainer = null;
-        
+
         if (hasTrainer) {
             trainer = new int[512];
             System.arraycopy(rom, 16, trainer, 0, 512);
@@ -233,11 +182,13 @@ public class ROMLoader {
             case 0:
                 return new NROM(prgrom, chrrom, trainer, haschrram);
             case 1:
-                if (header[4] >= 32) {
+                if (chrromSize <= 8192) {
+                    return new SXROM(prgrom, chrrom, trainer, haschrram);
+                } else if (header[4] >= 32) {
                     return new SUROM(prgrom, chrrom, trainer, haschrram);
                 } else if (header[4] >= 16) {
                     return new SOROM(prgrom, chrrom, trainer, haschrram);
-                } else if (header[4] < 16) {
+                } else {
                     return new SNROM(prgrom, chrrom, trainer, haschrram);
                 }
             case 2:
@@ -296,6 +247,8 @@ public class ROMLoader {
                 return new NES_QJ(prgrom, chrrom, trainer, haschrram);
             case 50:
                 return new Mapper050(prgrom, chrrom, trainer, haschrram);
+            case 52:
+                return new Mapper052(prgrom, chrrom, trainer, haschrram);
             case 58:
                 return new Mapper058(prgrom, chrrom, trainer, haschrram);
             case 60:
@@ -375,6 +328,8 @@ public class ROMLoader {
                 return new Mapper133(prgrom, chrrom, trainer, haschrram);
             case 140:
                 return new Jaleco_JF_11_14(prgrom, chrrom, trainer, haschrram);
+            case 142:
+                return new Mapper142(prgrom, chrrom, trainer, haschrram);
             case 143:
                 return new Mapper143(prgrom, chrrom, trainer, haschrram);
             case 145:
@@ -387,6 +342,8 @@ public class ROMLoader {
                 return new Mapper148(prgrom, chrrom, trainer, haschrram);
             case 149:
                 return new Mapper149(prgrom, chrrom, trainer, haschrram);
+            case 151:
+                return new Mapper151(prgrom, chrrom, trainer, haschrram);
             case 152:
                 return new TAITO_74_161_161_32(prgrom, chrrom, trainer, haschrram);
             case 153:
@@ -445,6 +402,8 @@ public class ROMLoader {
                 return new MLT_Action52(prgrom, chrrom, trainer, haschrram);
             case 232:
                 return new CamericaQuattro(prgrom, chrrom, trainer, haschrram);
+            case 234:
+                return new MLT_Maxi15(prgrom, chrrom, trainer, haschrram);
             case 240:
                 return new Mapper240(prgrom, chrrom, trainer, haschrram);
             case 241:
@@ -466,32 +425,155 @@ public class ROMLoader {
                 return null;
         }
     }
-    
+
+    /**
+     * Returns a board name.
+     * 
+     * @return      Board name
+     */
     public String getBoardName() {
         String boardname;
         final StringBuilder sb = new StringBuilder();
-        
+
         if (gui.nes.board != null) {
             boardname = gui.nes.board.getClass().getSimpleName();
-            
+
             if (boardname.startsWith("Mapper")) {
                 boardname = "";
             }
-            
+
             sb.append("".equals(boardname) ? "" : " (" + gui.nes.board.getClass().getSimpleName() + ")");
         }
-        
+
         return sb.toString();
     }
-    
+
+    /**
+     * Returns a ROM info.
+     * 
+     * @return      ROM info.
+     */
     public String getrominfo() {
         return ("ROM info:\n"
                 + "Filename:     " + filename + "\n"
                 + "Mapper:       " + mapperNumber + getBoardName() + "\n"
                 + "PRG-ROM Size:     " + prgromSize / 1024 + " kB\n"
-                + "CHR-ROM Size:     " + (haschrram ? 0 : chrromSize / 1024) + " kB\n"
+                + (savesram ? "PRG-RAM Size:     " + (gui.nes.board.sram.length / 1024) + " kB\n" : "")
+                + (haschrram ? "" : "CHR-ROM Size:     " + (chrromSize / 1024) + " kB\n")
+                + (!haschrram ? "" : "CHR-RAM Size:     " + (chrramSize / 1024) + " kB\n")
                 + "Mirroring:    " + mirroring.toString() + "\n"
-                + "Battery Save: " + ((savesram) ? "Yes\n" : "No\n"))
-                + "SHA-1: " + sha1;
+                + "SHA-1: " + sha1);
+    }
+
+    /**
+     * iNES and NES 2.0 parser.
+     */
+    class INESParser {
+        /**
+         * Initializes header parsing.
+         */
+        INESParser() {
+            parseInesHeader();
+        }   
+        
+        /**
+         * Parses iNES or NES 2.0 header
+         */
+        public void parseInesHeader() {
+            readHeader(16);
+        // decode iNES 1.0 headers
+            // 1st 4 bytes : $4E $45 $53 $1A
+            if (header[0] != 0x4E || header[1] != 0x45 || header[2] != 0x53 || header[3] != 0x1A) {
+
+                // not a valid file
+                if (header[0] == 'U') {
+                    gui.messageBox("This is a UNIF file with the wrong extension!");
+                    return;
+                }
+
+                gui.messageBox("Invalid iNES header!");
+                return;
+            }
+
+            prgromSize = 16384 * header[4];
+            chrromSize = 8192 * header[5];
+            hasTrainer = Tools.getbit(header[6], 2);
+            mapperNumber = ((header[6] & 0xF0) >> 4) | (header[7] & 0xF0);
+
+            savesram = Tools.getbit(header[6], 1);
+
+            switch (header[6] & 0x9) {
+                case 0x0:
+                    mirroring = PPUMemory.Mirroring.HORIZONTAL;
+                    break;
+                case 0x1:
+                    mirroring = PPUMemory.Mirroring.VERTICAL;
+                    break;
+                case 0x8:
+                case 0x9:
+                    mirroring = PPUMemory.Mirroring.FOURSCREEN;
+                    break;
+                default:
+                    break;
+            }
+
+            prgramSize = (header[8] == 0) ? 8192 : 8192 * header[8];
+
+            if ((header[7] & 0x0C) == 0x08) {
+                //iNES 2.0
+                inesVersion = 2;
+
+                mapperNumber |= (header[8] & 0x0F) << 8;
+                submapper = (header[8] & 0xF0) << 4;
+                prgromSize |= (header[9] & 0x0F) << 8;
+                chrromSize |= (header[9] & 0xF0) << 4;
+                prgramSize = header[10];
+                chrramSize = header[11];
+                tvmode = header[12];
+                vssystem = header[13];
+
+                gui.nes.setRegion(tvmode == 0 ? Region.NTSC : Region.PAL);
+
+                if (((prgramSize & 0xF) == 0xF) || ((prgramSize & 0xF0) == 0xF0)) {
+                    gui.messageBox("Invalid PRG RAM size specified!");
+                    return;
+                }
+
+                if (((chrramSize & 0xF) == 0xF) || ((chrramSize & 0xF0) == 0xF0)) {
+                    gui.messageBox("Invalid CHR RAM size specified!");
+                    return;
+                }
+
+                if (((chrramSize & 0xF0) != 0)) {
+                    gui.messageBox("TODO: Implement battery-backed CHR RAM");
+                }
+
+                if (header[14] != 0) {
+                    gui.messageBox("Unrecognized data found at header offset 14!");
+                    return;
+                }
+
+                if (header[15] != 0) {
+                    gui.messageBox("Unrecognized data found at header offset 15!");
+                    return;
+                }
+            } else {
+                StringBuilder sb = new StringBuilder();
+                
+                for (int i = 9; i < 16; i++) {
+                    if (header[i] != 0) {
+                        sb.append(header[i]).append(" ");
+                        break;
+                    }
+                }
+                
+                if (!sb.toString().isEmpty()) {
+                    gui.messageBox("Bytes: " + sb.toString() + "contain invalid data!");
+                }
+            }
+
+            prgOffset = 0;
+            chrOffset = prgromSize;
+        }
     }
 }

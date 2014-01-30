@@ -26,6 +26,7 @@ package nesimulare.core.boards;
 import nesimulare.core.cpu.CPU;
 
 /**
+ * Emulates mapper 91.
  *
  * @author Parseus
  */
@@ -38,10 +39,21 @@ public class Mapper091 extends Board {
     private int newA12;
     private int irqTimer;
     
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Mapper091(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -57,6 +69,12 @@ public class Mapper091 extends Board {
         irqTimer = 0;
     }
     
+    /**
+     * Writes data to a given address within the range $6000-$7FFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writeSRAM(int address, int data) {
         switch (address & 0x7003) {
@@ -93,6 +111,11 @@ public class Mapper091 extends Board {
         }
     }
     
+    /**
+     * Updates PPU on a given address while rising A12 address line.
+     * 
+     * @param address       Address to update PPU
+     */
     @Override
     public void updateAddressLines(final int address) {
         oldA12 = newA12;
@@ -105,11 +128,11 @@ public class Mapper091 extends Board {
                 if (irqCounter == 0 || irqClear) {
                     irqCounter = irqReload;
                 } else {
-                    irqCounter--;
+                    irqCounter = (irqCounter - 1) & 0xFF;
                 }
                 
                 if (irqCounter == 0) {
-                    if (oldCounter != 0 || irqClear) {
+                    if (oldCounter != 0 || irqCounter == 0 && irqEnable) {
                         nes.cpu.interrupt(CPU.InterruptTypes.BOARD, true);
                     }
                 }
@@ -121,6 +144,9 @@ public class Mapper091 extends Board {
         }
     }
     
+    /**
+     * Clocks timer every PPU cycle.
+     */
     @Override
     public void clockPPUCycle() {
         irqTimer++;

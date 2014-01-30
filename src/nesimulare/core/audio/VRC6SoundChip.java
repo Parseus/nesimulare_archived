@@ -26,6 +26,10 @@ package nesimulare.core.audio;
 import nesimulare.core.Region;
 
 /**
+ * Emulates VRC6 sound chip, which consists of two pulse wave channels and a sawtooth channel.
+ *
+ * @see VRC6PulseSoundChannel
+ * @see VRC6SawtoothSoundChannel
  *
  * @author Parseus
  */
@@ -33,14 +37,24 @@ public class VRC6SoundChip implements ExpansionSoundChip {
     public VRC6PulseSoundChannel pulse1, pulse2;
     public VRC6SawtoothSoundChannel sawtooth;
     
+    /**
+     * Constructor for this class. Connects an emulated region with a given channel.
+     *
+     * @param system Emulated region
+     */
     public VRC6SoundChip(Region.System system) {
         pulse1 = new VRC6PulseSoundChannel(system);
         pulse2 = new VRC6PulseSoundChannel(system);
         sawtooth = new VRC6SawtoothSoundChannel(system);
     }
 
+    /**
+     * Generates an audio sample for use with an audio renderer.
+     *
+     * @return Audio sample for use with an audio renderer.
+     */
     @Override
-    public int mix() {
+    public int getOutput() {
         int output = 384 * pulse1.getOutput();
         output += pulse2.getOutput();
         output += (sawtooth.getOutput() >> 3);
@@ -48,6 +62,9 @@ public class VRC6SoundChip implements ExpansionSoundChip {
         return output;
     }
 
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         pulse1.hardReset();
@@ -55,6 +72,9 @@ public class VRC6SoundChip implements ExpansionSoundChip {
         sawtooth.hardReset();
     }
 
+    /**
+     * Performs a soft reset (pressing Reset button on a console).
+     */
     @Override
     public void softReset() {
         pulse1.softReset();
@@ -62,21 +82,36 @@ public class VRC6SoundChip implements ExpansionSoundChip {
         sawtooth.softReset();
     }
 
+    /**
+     * Clocks envelopes for both pulse wave channels.
+     */
     @Override
     public void quarterFrame() {
         //Nothing to see here, move along
     }
 
+    /**
+     * Clocks length counters for both pulse wave channels.
+     * Also clocks envelopes.
+     */
     @Override
     public void halfFrame() {
         //Nothing to see here, move along
     }
 
+    /**
+     * Clocks channels depending on clocking length.
+     */
     @Override
     public void clockChannel(boolean clockingLength) {
         //Nothing to see here, move along
     }
 
+    /**
+     * Performs a given number of machine cycles.
+     * 
+     * @param cycles        Number of machine cycles.
+     */
     @Override
     public void cycle(int cycles) {
         pulse1.cycle(cycles);

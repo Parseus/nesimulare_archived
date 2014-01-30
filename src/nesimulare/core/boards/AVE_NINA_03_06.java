@@ -27,16 +27,30 @@ import nesimulare.core.memory.PPUMemory;
 import nesimulare.gui.Tools;
 
 /**
+ * Emulates a AVE-NINA-03 board (mapper 79) and a AVE-NINA-06 board (mapper 113).
+ * Mapper 113 features a mapper-controlled mirroring.
  *
  * @author Parseus
  */
 public class AVE_NINA_03_06 extends Board {
     private boolean mirroring = false;
     
+    /**
+     * Constructor for this class.
+     * 
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM
+     *                  False: PCB contains CHR-ROM
+     */
     public AVE_NINA_03_06(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Initializes the board.
+     */
     @Override
     public void initialize() {
         super.initialize();
@@ -44,8 +58,24 @@ public class AVE_NINA_03_06 extends Board {
         mirroring = (nes.loader.mapperNumber == 113);
     }
     
+    /**
+     * Writes data to a given address within the range $4020-$5FFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writeEXP(int address, int data) {
+        /**
+         * $4100-$5FFF, mask: $4100
+         * [MCPP PCCC]
+         * C = CHR Reg (8k @ $0000)
+         * P = PRG Reg (32k @ $8000)
+         * M = Mirroring (only on mapper 113):
+                0 = Horizontal
+                1 = Vertical
+         */
+        
         if ((address & 0x4100) == 0x4100) {
             super.switch32kPRGbank((data & 0x38) >> 3);
             super.switch8kCHRbank((data & 0x7) | ((data & 0x40) >> 3));

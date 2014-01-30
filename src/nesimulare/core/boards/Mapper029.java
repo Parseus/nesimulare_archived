@@ -24,14 +24,26 @@
 package nesimulare.core.boards;
 
 /**
+ * Emulates a homebrew mapper used for Glider (mapper 29).
  *
  * @author Parseus
  */
 public class Mapper029 extends Board {
+    /**
+     * Constructor for this class.
+     *
+     * @param prg PRG-ROM
+     * @param chr CHR-ROM (or CHR-RAM)
+     * @param trainer Trainer
+     * @param haschrram True: PCB contains CHR-RAM False: PCB contains CHR-ROM
+     */
     public Mapper029(int[] prg, int[] chr, int[] trainer, boolean haschrram) {
         super(prg, chr, trainer, haschrram);
     }
     
+    /**
+     * Performs a hard reset (turning console off and after about 30 minutes turning it back on).
+     */
     @Override
     public void hardReset() {
         super.hardReset();
@@ -39,6 +51,12 @@ public class Mapper029 extends Board {
         super.switch16kPRGbank((prg.length - 0x2000) >> 13, 0xC000);
     }
     
+    /**
+     * Writes data to a given address within the range $8000-$FFFF.
+     * 
+     * @param address       Address to write data to
+     * @param data          Written data
+     */
     @Override
     public void writePRG(int address, int data) {
         super.switch16kPRGbank((data >> 2) & 0x7, 0x8000);
